@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NFC Souvenirs - Redireccionando</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #1a1a1a; color: white; }
+        .card { background: #333; padding: 20px; border-radius: 15px; display: inline-block; max-width: 80%; }
+        .btn { background: #673ab7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+        .uuid { color: #aaa; font-size: 0.8em; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📸 NFC Souvenirs</h1>
+        <p id="msg">Si tienes la App instalada, debería abrirse automáticamente.</p>
+        <div id="info"></div>
+        <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn">Descargar App Completa</a>
+        <div class="uuid" id="uuid-display"></div>
+    </div>
+
+    <script>
+        // Intentar extraer el UUID de la URL
+        const path = window.location.pathname;
+        const segments = path.split('/');
+        const uuid = segments[segments.length - 1];
+        
+        if (uuid && uuid.length > 20) {
+            document.getElementById('uuid-display').innerText = "ID de Imán: " + uuid;
+            document.getElementById('msg').innerText = "¡Imán detectado! Abriendo tu galería...";
+        }
+    </script>
+</body>
+</html>

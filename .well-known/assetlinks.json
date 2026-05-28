@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.nfc_souvenirs",
+      "sha256_cert_fingerprints": ["DE:43:1B:72:79:C8:9E:6B:FB:DC:F4:5C:1C:89:31:3A:08:B5:6A:0D:94:C7:4C:8D:EA:2E:1B:55:CE:CE:B2:9D"]
+    }
+  }
+]

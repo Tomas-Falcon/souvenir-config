@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TU_TEAM_ID.com.tudominio.app",
+        "paths": [ "/m/*" ]
+      }
+    ]
+  },
+  "appclips": {
+    "apps": ["TU_TEAM_ID.com.tudominio.app.Clip"]
+  }
+}
