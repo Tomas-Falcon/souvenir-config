@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NFC Souvenirs - Instant View</title>
+    <title>NFC Souvenirs - Experiencia Instantánea</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0B0F19;
@@ -15,10 +15,12 @@
             --accent: #6366f1;
             --text-main: #f3f4f6;
             --text-muted: #9ca3af;
-            --gradient-start: rgba(99, 102, 241, 0.22);
+            --gradient-start: rgba(99, 102, 241, 0.15);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --radius: 16px;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
         body {
             background-color: var(--bg-dark);
@@ -31,96 +33,194 @@
             flex-direction: column;
             overflow-x: hidden;
             background-attachment: fixed;
+            transition: background 0.5s ease;
         }
 
-        body.styled {
-            background: radial-gradient(circle at top center, var(--gradient-start) 0%, var(--bg-dark) 100%);
+        /* Ambient Background Glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; height: 100vh;
+            background: radial-gradient(circle at top center, var(--gradient-start) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
         }
 
         header {
-            padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+            padding: 2.5rem 1.5rem 1.5rem;
             text-align: center;
-            z-index: 10;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
             font-weight: 800;
             margin: 0;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.03em;
             background: linear-gradient(to right, #ffffff, #d8b4fe);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
+        /* Adaptive Gallery Grid */
+        .gallery-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
         .gallery {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding: 8px;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
+            grid-template-columns: repeat(3, 1fr); /* Default mobile */
+            gap: 12px;
+        }
+
+        /* PC / Tablet adjustments */
+        @media (min-width: 768px) {
+            .gallery { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+            header { padding: 4rem 1.5rem 2rem; }
+        }
+
+        @media (min-width: 1024px) {
+            .gallery { grid-template-columns: repeat(5, 1fr); }
         }
 
         .media-item {
             position: relative;
             width: 100%;
             aspect-ratio: 1/1;
-            border-radius: 16px;
+            border-radius: var(--radius);
             overflow: hidden;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .media-item:active { transform: scale(0.95); }
+        .media-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--accent);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+        }
 
         .media-item img, .media-item video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: filter 0.3s ease;
         }
 
-        .video-overlay {
+        .video-indicator {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            bottom: 10px; right: 10px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            padding: 4px 8px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.2);
+            gap: 4px;
+            font-size: 10px;
             color: white;
+            font-weight: 600;
         }
 
-        .video-overlay svg { width: 40px; height: 40px; opacity: 0.8; }
-
+        /* Pro Viewer (Carousel Style) */
         #viewer {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: black;
+            background: rgba(0, 0, 0, 0.98);
             z-index: 1000;
             display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(20px);
         }
 
-        #viewer .close-btn {
+        .viewer-header {
             position: absolute;
-            top: 40px; right: 20px;
-            width: 40px; height: 40px;
+            top: 0; left: 0; right: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1010;
+        }
+
+        .close-btn, .nav-btn {
             background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 45px; height: 45px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            z-index: 1010;
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
+        .close-btn:hover, .nav-btn:hover { background: var(--primary); }
+
+        .viewer-main {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .viewer-content-wrapper {
+            max-width: 95vw;
+            max-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viewer-content-wrapper img, .viewer-content-wrapper video {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        .nav-controls {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+
+        .nav-btn { pointer-events: auto; }
+
+        .viewer-footer {
+            position: absolute;
+            bottom: 30px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(255,255,255,0.05);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        /* States & Animations */
         .loader {
             position: fixed;
             top: 50%; left: 50%;
@@ -146,13 +246,13 @@
         .btn-cta {
             margin-top: 1.5rem;
             padding: 1rem 2rem;
-            background: linear-gradient(135deg, #6366f1, #a855f7);
+            background: linear-gradient(135deg, var(--primary), #a855f7);
             color: white;
             text-decoration: none;
             border-radius: 12px;
             font-weight: 700;
             font-family: 'Outfit', sans-serif;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
         }
     </style>
 </head>
@@ -161,17 +261,32 @@
         <h1 id="albumTitle">NFC Souvenirs</h1>
     </header>
 
-    <div id="loader" class="loader"></div>
-    <div id="gallery" class="gallery"></div>
-    
-    <div id="error" class="error-container" style="display:none;">
-        <p id="errorMsg" style="color: var(--text-muted);"></p>
-        <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn-cta">Descargar la App</a>
-    </div>
+    <main class="gallery-container">
+        <div id="loader" class="loader"></div>
+        <div id="gallery" class="gallery"></div>
+        
+        <div id="error" class="error-container" style="display:none;">
+            <p id="errorMsg" style="color: var(--text-muted);"></p>
+            <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn-cta">Instalar NFC Souvenirs</a>
+        </div>
+    </main>
 
-    <div id="viewer" onclick="closeViewer()">
-        <div class="close-btn">✕</div>
-        <div id="viewer-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+    <!-- Professional Viewer with Carousel Navigation -->
+    <div id="viewer">
+        <div class="viewer-header">
+            <div id="mediaCounter" style="font-weight: 600; font-size: 14px;">1 / 1</div>
+            <button class="close-btn" onclick="closeViewer()">✕</button>
+        </div>
+        
+        <div class="viewer-main">
+            <div class="nav-controls">
+                <button class="nav-btn" onclick="prevMedia(event)">❮</button>
+                <button class="nav-btn" onclick="nextMedia(event)">❯</button>
+            </div>
+            <div id="viewer-content-wrapper" class="viewer-content-wrapper"></div>
+        </div>
+        
+        <div id="viewer-footer" class="viewer-footer">Recuerdo</div>
     </div>
 
     <script>
@@ -179,89 +294,109 @@
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        let currentAlbumMedia = [];
+        let currentIndex = 0;
+
         async function init() {
             const pathParts = window.location.pathname.split('/');
             let uuid = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
 
             if (!uuid || uuid.length < 30) {
-                showError("Código de imán no detectado.");
+                showError("Escanea un imán para ver tus recuerdos.");
                 return;
             }
 
             try {
+                // Fetch Tag + Album + Category + Media in one go (Embedded select)
                 const { data: tag, error: tagError } = await supabaseClient
                     .from('tags')
-                    .select('status, album_id, albums(title, is_published, use_category_style, categories(style_json))')
+                    .select(`
+                        status, 
+                        album_id, 
+                        albums(
+                            title, 
+                            is_published, 
+                            use_category_style, 
+                            categories(style_json),
+                            media(url, type, order_index)
+                        )
+                    `)
                     .eq('uuid', uuid)
                     .maybeSingle();
 
                 if (tagError || !tag) {
-                    showError("Imán no registrado o error de conexión.");
+                    showError("Este imán no está registrado.");
                     return;
                 }
 
                 if (tag.status === 'unassigned' || !tag.album_id) {
                     document.getElementById('albumTitle').innerText = "Nuevo Souvenir";
-                    showError("Este imán está listo para ser vinculado. ¡Usa la App!");
+                    showError("¡Imán detectado! Pero aún no tiene fotos vinculadas.");
                     return;
                 }
 
-                if (tag.albums) {
-                    applyStyles(tag.albums);
-                    document.getElementById('albumTitle').innerText = tag.albums.title;
+                const album = tag.albums;
+                if (!album) {
+                    showError("El álbum es privado o no se pudo cargar.");
+                    return;
                 }
 
-                const { data: media, error: mediaError } = await supabaseClient
-                    .from('media')
-                    .select('url, type')
-                    .eq('album_id', tag.album_id)
-                    .order('order_index', { ascending: true });
-
-                if (mediaError) throw mediaError;
-
-                renderGallery(media || []);
+                applyStyles(album);
+                document.getElementById('albumTitle').innerText = album.title;
+                
+                // Sort media by order_index
+                currentAlbumMedia = (album.media || []).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+                
+                renderGallery(currentAlbumMedia);
 
             } catch (e) {
-                showError("Error al cargar la galería: " + e.message);
+                showError("Conexión perdida. Reintenta en unos segundos.");
             } finally {
                 document.getElementById('loader').style.display = 'none';
             }
         }
 
         function applyStyles(album) {
+            console.log("Aplicando estilos:", album.use_category_style, album.categories);
             if (album.use_category_style && album.categories && album.categories.style_json) {
                 const style = album.categories.style_json;
                 const body = document.getElementById('body');
-                body.classList.add('styled');
-                const hex = style.gradientStart.replace('#', '');
-                const r = parseInt(hex.substring(0, 2), 16);
-                const g = parseInt(hex.substring(2, 4), 16);
-                const b = parseInt(hex.substring(4, 6), 16);
-                body.style.setProperty('--gradient-start', `rgba(${r}, ${g}, ${b}, 0.22)`);
-                body.style.setProperty('--accent', style.accentColor);
+                
+                if (style.gradientStart) {
+                    const hex = style.gradientStart.replace('#', '');
+                    const r = parseInt(hex.substring(0, 2), 16);
+                    const g = parseInt(hex.substring(2, 4), 16);
+                    const b = parseInt(hex.substring(4, 6), 16);
+                    body.style.setProperty('--gradient-start', `rgba(${r}, ${g}, ${b}, 0.25)`);
+                    body.style.setProperty('--primary', style.accentColor || style.gradientStart);
+                    body.style.setProperty('--accent', style.accentColor || style.gradientStart);
+                }
             }
         }
 
         function renderGallery(media) {
             const container = document.getElementById('gallery');
             if (media.length === 0) {
-                showError("El álbum está vinculado pero aún no tiene fotos.");
+                showError("El álbum está vacío. Sube fotos desde la App.");
                 return;
             }
+            
             media.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'media-item';
-                div.onclick = (e) => { e.stopPropagation(); openViewer(media, index); };
+                div.onclick = () => openViewer(index);
+
                 if (item.type === 'video') {
                     const video = document.createElement('video');
-                    video.src = item.url + "#t=0.5";
+                    video.src = item.url + "#t=0.1";
                     video.muted = true;
                     video.playsInline = true;
                     div.appendChild(video);
-                    const overlay = document.createElement('div');
-                    overlay.className = 'video-overlay';
-                    overlay.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>';
-                    div.appendChild(overlay);
+                    
+                    const indicator = document.createElement('div');
+                    indicator.className = 'video-indicator';
+                    indicator.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span>VIDEO</span>';
+                    div.appendChild(indicator);
                 } else {
                     const img = document.createElement('img');
                     img.src = item.url;
@@ -272,38 +407,62 @@
             });
         }
 
-        function openViewer(media, index) {
-            const viewer = document.getElementById('viewer');
-            const container = document.getElementById('viewer-container');
+        function openViewer(index) {
+            currentIndex = index;
+            updateViewer();
+            document.getElementById('viewer').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updateViewer() {
+            const container = document.getElementById('viewer-content-wrapper');
+            const counter = document.getElementById('mediaCounter');
+            const item = currentAlbumMedia[currentIndex];
+            
             container.innerHTML = '';
-            const item = media[index];
+            counter.innerText = `${currentIndex + 1} / ${currentAlbumMedia.length}`;
+
             if (item.type === 'video') {
                 const video = document.createElement('video');
                 video.src = item.url;
                 video.controls = true;
                 video.autoplay = true;
-                video.style.maxWidth = '100%';
-                video.style.maxHeight = '100%';
                 container.appendChild(video);
             } else {
                 const img = document.createElement('img');
                 img.src = item.url;
-                img.style.maxWidth = '100%';
-                img.style.maxHeight = '100%';
-                img.style.objectFit = 'contain';
                 container.appendChild(img);
             }
-            viewer.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+        }
+
+        function nextMedia(e) {
+            if (e) e.stopPropagation();
+            currentIndex = (currentIndex + 1) % currentAlbumMedia.length;
+            updateViewer();
+        }
+
+        function prevMedia(e) {
+            if (e) e.stopPropagation();
+            currentIndex = (currentIndex - 1 + currentAlbumMedia.length) % currentAlbumMedia.length;
+            updateViewer();
         }
 
         function closeViewer() {
             const viewer = document.getElementById('viewer');
-            const container = document.getElementById('viewer-container');
+            const container = document.getElementById('viewer-content-wrapper');
             container.innerHTML = '';
             viewer.style.display = 'none';
             document.body.style.overflow = 'auto';
         }
+
+        // Teclado para navegación en PC
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('viewer').style.display === 'flex') {
+                if (e.key === 'ArrowRight') nextMedia();
+                if (e.key === 'ArrowLeft') prevMedia();
+                if (e.key === 'Escape') closeViewer();
+            }
+        });
 
         function showError(msg) {
             document.getElementById('errorMsg').innerText = msg;
