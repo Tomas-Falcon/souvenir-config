@@ -1,35 +1,318 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>NFC Souvenirs - Redireccionando</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NFC Souvenirs - Instant View</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #1a1a1a; color: white; }
-        .card { background: #333; padding: 20px; border-radius: 15px; display: inline-block; max-width: 80%; }
-        .btn { background: #673ab7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
-        .uuid { color: #aaa; font-size: 0.8em; margin-top: 10px; }
+        :root {
+            --bg-dark: #0B0F19;
+            --primary: #6366f1;
+            --accent: #6366f1;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --gradient-start: rgba(99, 102, 241, 0.22);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        body.styled {
+            background: radial-gradient(circle at top center, var(--gradient-start) 0%, var(--bg-dark) 100%);
+        }
+
+        header {
+            padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+            text-align: center;
+            z-index: 10;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #ffffff, #d8b4fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 8px;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .media-item {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .media-item:active { transform: scale(0.95); }
+
+        .media-item img, .media-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .video-overlay svg { width: 40px; height: 40px; opacity: 0.8; }
+
+        #viewer {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: black;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #viewer .close-btn {
+            position: absolute;
+            top: 40px; right: 20px;
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 1010;
+        }
+
+        .loader {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .btn-cta {
+            margin-top: 1.5rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
     </style>
 </head>
-<body>
-    <div class="card">
-        <h1>📸 NFC Souvenirs</h1>
-        <p id="msg">Si tienes la App instalada, debería abrirse automáticamente.</p>
-        <div id="info"></div>
-        <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn">Descargar App Completa</a>
-        <div class="uuid" id="uuid-display"></div>
+<body id="body">
+    <header id="header">
+        <h1 id="albumTitle">Cargando...</h1>
+    </header>
+
+    <div id="loader" class="loader"></div>
+    <div id="gallery" class="gallery"></div>
+    
+    <div id="error" class="error-container" style="display:none;">
+        <p id="errorMsg" style="color: var(--text-muted);"></p>
+        <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn-cta">Descargar la App</a>
+    </div>
+
+    <div id="viewer" onclick="closeViewer()">
+        <div class="close-btn">✕</div>
+        <div id="viewer-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
     </div>
 
     <script>
-        // Intentar extraer el UUID de la URL
-        const path = window.location.pathname;
-        const segments = path.split('/');
-        const uuid = segments[segments.length - 1];
-        
-        if (uuid && uuid.length > 20) {
-            document.getElementById('uuid-display').innerText = "ID de Imán: " + uuid;
-            document.getElementById('msg').innerText = "¡Imán detectado! Abriendo tu galería...";
+        const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function init() {
+            const pathParts = window.location.pathname.split('/');
+            let uuid = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+
+            // Si el UUID está vacío o es un nombre de archivo, no procesar
+            if (!uuid || uuid === 'm' || uuid === 'index.html' || uuid === '404.html') {
+                showError("Código de imán no detectado.");
+                return;
+            }
+
+            try {
+                const { data: tag, error: tagError } = await supabase
+                    .from('tags')
+                    .select('status, album_id, albums(title, is_published, use_category_style, categories(style_json))')
+                    .eq('uuid', uuid)
+                    .single();
+
+                if (tagError || !tag) {
+                    showError("Imán no registrado.");
+                    return;
+                }
+
+                if (tag.status === 'unassigned' || !tag.album_id) {
+                    document.getElementById('albumTitle').innerText = "Nuevo Souvenir";
+                    showError("Este imán aún no tiene recuerdos vinculados.");
+                    return;
+                }
+
+                applyStyles(tag.albums);
+
+                const { data: media, error: mediaError } = await supabase
+                    .from('media')
+                    .select('url, type')
+                    .eq('album_id', tag.album_id)
+                    .order('order_index', { ascending: true });
+
+                if (mediaError) throw mediaError;
+
+                renderGallery(tag.albums.title, media);
+
+            } catch (e) {
+                console.error(e);
+                showError("Error al conectar con la galería.");
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
         }
+
+        function applyStyles(album) {
+            if (album.use_category_style && album.categories && album.categories.style_json) {
+                const style = album.categories.style_json;
+                const body = document.getElementById('body');
+                body.classList.add('styled');
+                const hex = style.gradientStart.replace('#', '');
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                body.style.setProperty('--gradient-start', `rgba(${r}, ${g}, ${b}, 0.22)`);
+                body.style.setProperty('--accent', style.accentColor);
+            }
+        }
+
+        function renderGallery(title, media) {
+            document.getElementById('albumTitle').innerText = title;
+            const container = document.getElementById('gallery');
+            if (media.length === 0) {
+                showError("El álbum está vacío.");
+                return;
+            }
+            media.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'media-item';
+                div.onclick = (e) => { e.stopPropagation(); openViewer(media, index); };
+                if (item.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.url + "#t=0.5";
+                    video.muted = true;
+                    video.playsInline = true;
+                    div.appendChild(video);
+                    const overlay = document.createElement('div');
+                    overlay.className = 'video-overlay';
+                    overlay.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>';
+                    div.appendChild(overlay);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = item.url;
+                    img.loading = "lazy";
+                    div.appendChild(img);
+                }
+                container.appendChild(div);
+            });
+        }
+
+        function openViewer(media, index) {
+            const viewer = document.getElementById('viewer');
+            const container = document.getElementById('viewer-container');
+            container.innerHTML = '';
+            const item = media[index];
+            if (item.type === 'video') {
+                const video = document.createElement('video');
+                video.src = item.url;
+                video.controls = true;
+                video.autoplay = true;
+                video.style.maxWidth = '100%';
+                video.style.maxHeight = '100%';
+                container.appendChild(video);
+            } else {
+                const img = document.createElement('img');
+                img.src = item.url;
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+                img.style.objectFit = 'contain';
+                container.appendChild(img);
+            }
+            viewer.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeViewer() {
+            const viewer = document.getElementById('viewer');
+            const container = document.getElementById('viewer-container');
+            container.innerHTML = '';
+            viewer.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMsg').innerText = msg;
+            document.getElementById('error').style.display = 'flex';
+            document.getElementById('gallery').style.display = 'none';
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        init();
     </script>
 </body>
 </html>
