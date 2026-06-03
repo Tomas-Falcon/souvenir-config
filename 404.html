@@ -3,290 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NFC Souvenirs - Experiencia Instantánea</title>
+    <title>NFC Souvenirs | Tus Recuerdos Inmortales</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0B0F19;
+            --bg-dark: #07090e;
             --primary: #6366f1;
             --accent: #6366f1;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
             --gradient-start: rgba(99, 102, 241, 0.15);
             --card-bg: rgba(255, 255, 255, 0.03);
-            --radius: 16px;
+            --glass: rgba(255, 255, 255, 0.05);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: var(--bg-dark);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             overflow-x: hidden;
             background-attachment: fixed;
-            transition: background 0.5s ease;
         }
 
-        /* Ambient Background Glow */
+        /* Hero Glow Background */
         body::before {
             content: '';
             position: fixed;
-            top: 0; left: 0; right: 0; height: 100vh;
-            background: radial-gradient(circle at top center, var(--gradient-start) 0%, transparent 70%);
+            top: -10%; left: 0; right: 0; height: 120vh;
+            background: radial-gradient(circle at 50% 0%, var(--gradient-start) 0%, transparent 80%);
             z-index: -1;
             pointer-events: none;
+            transition: background 1s ease;
         }
 
         header {
-            padding: 2.5rem 1.5rem 1.5rem;
+            padding: 3rem 1.5rem 2rem;
             text-align: center;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
             z-index: 100;
+        }
+
+        .header-content {
+            display: inline-block;
+            animation: slideDown 0.8s ease;
         }
 
         h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: clamp(1.5rem, 5vw, 2.2rem);
-            font-weight: 800;
+            font-size: clamp(1.8rem, 6vw, 3rem);
+            font-weight: 900;
             margin: 0;
-            letter-spacing: -0.03em;
-            background: linear-gradient(to right, #ffffff, #d8b4fe);
+            letter-spacing: -0.05em;
+            line-height: 1;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.7) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        /* Adaptive Gallery Grid */
-        .gallery-container {
-            max-width: 1200px;
+        .album-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* High Fidelity Gallery Grid */
+        .gallery-wrapper {
+            max-width: 1400px;
             width: 100%;
             margin: 0 auto;
-            padding: 1rem;
+            padding: 0 1.5rem 5rem;
         }
 
         .gallery {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Default mobile */
+            grid-template-columns: repeat(3, 1fr);
             gap: 12px;
         }
 
-        /* PC / Tablet adjustments */
-        @media (min-width: 768px) {
-            .gallery { grid-template-columns: repeat(4, 1fr); gap: 20px; }
-            header { padding: 4rem 1.5rem 2rem; }
-        }
-
-        @media (min-width: 1024px) {
-            .gallery { grid-template-columns: repeat(5, 1fr); }
-        }
+        @media (min-width: 768px) { .gallery { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
+        @media (min-width: 1200px) { .gallery { grid-template-columns: repeat(6, 1fr); gap: 30px; } }
 
         .media-item {
             position: relative;
             width: 100%;
             aspect-ratio: 1/1;
-            border-radius: var(--radius);
+            border-radius: var(--radius-md);
             overflow: hidden;
             background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: var(--transition);
+            opacity: 0;
+            transform: translateY(20px);
         }
 
+        .media-item.show { opacity: 1; transform: translateY(0); }
+
         .media-item:hover {
-            transform: translateY(-5px) scale(1.02);
+            transform: scale(1.04) translateY(-5px);
             border-color: var(--accent);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--gradient-start);
+            z-index: 2;
         }
 
         .media-item img, .media-item video {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
-            transition: filter 0.3s ease;
+            transition: transform 0.6s ease;
         }
 
-        .video-indicator {
+        .media-item:hover img, .media-item:hover video { transform: scale(1.1); }
+
+        .video-tag {
             position: absolute;
-            bottom: 10px; right: 10px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            padding: 4px 8px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
+            top: 12px; right: 12px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
             color: white;
-            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Pro Viewer (Carousel Style) */
+        /* Immersive Pro Viewer */
         #viewer {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.98);
+            background: #000;
             z-index: 1000;
             display: none;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(20px);
+            overflow: hidden;
+        }
+
+        /* Blur Backdrop Effect */
+        #viewer-backdrop {
+            position: absolute;
+            top: -10%; left: -10%; right: -10%; bottom: -10%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(80px) brightness(0.4);
+            opacity: 0.6;
+            z-index: -1;
+            transition: background-image 0.5s ease;
         }
 
         .viewer-header {
             position: absolute;
             top: 0; left: 0; right: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 1.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+            z-index: 1020;
+        }
+
+        .viewer-controls {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1.5rem;
+            pointer-events: none;
+            z-index: 1015;
+        }
+
+        .v-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            backdrop-filter: blur(12px);
+            pointer-events: auto;
+        }
+
+        .v-btn:hover { background: var(--primary); transform: scale(1.1); }
+        .v-btn:active { transform: scale(0.9); }
+
+        .close-x { font-size: 1.5rem; font-weight: 300; }
+
+        .viewer-content {
+            max-width: 100vw;
+            max-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
             z-index: 1010;
         }
 
-        .close-btn, .nav-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
-            width: 45px; height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .close-btn:hover, .nav-btn:hover { background: var(--primary); }
-
-        .viewer-main {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .viewer-content-wrapper {
+        .viewer-content img, .viewer-content video {
             max-width: 95vw;
-            max-height: 80vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .viewer-content-wrapper img, .viewer-content-wrapper video {
-            max-width: 100%;
-            max-height: 80vh;
+            max-height: 85vh;
             object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            animation: fadeIn 0.4s ease;
+            border-radius: 4px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            animation: zoomIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-        .nav-controls {
+        .viewer-info {
             position: absolute;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
-            pointer-events: none;
-        }
-
-        .nav-btn { pointer-events: auto; }
-
-        .viewer-footer {
-            position: absolute;
-            bottom: 30px;
-            color: white;
-            font-size: 14px;
+            bottom: 2rem;
+            left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 0.8rem;
             font-weight: 500;
-            background: rgba(255,255,255,0.05);
-            padding: 8px 16px;
-            border-radius: 20px;
+            color: white;
+            z-index: 1020;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* States & Animations */
+        /* Skeleton & Loader */
         .loader {
             position: fixed;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            border: 3px solid rgba(255,255,255,0.1);
-            border-left-color: var(--primary);
+            width: 50px; height: 50px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
             border-radius: 50%;
-            width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
+
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
 
-        .error-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            text-align: center;
+        /* Error Styles */
+        .error-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            flex: 1; padding: 3rem; text-align: center;
         }
 
-        .btn-cta {
-            margin-top: 1.5rem;
-            padding: 1rem 2rem;
+        .btn-premium {
+            margin-top: 2rem;
+            padding: 1.2rem 2.5rem;
             background: linear-gradient(135deg, var(--primary), #a855f7);
             color: white;
             text-decoration: none;
-            border-radius: 12px;
-            font-weight: 700;
+            border-radius: 100px;
             font-family: 'Outfit', sans-serif;
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.3);
+            transition: var(--transition);
         }
+
+        .btn-premium:hover { transform: translateY(-3px); box-shadow: 0 20px 45px rgba(99, 102, 241, 0.5); }
+
     </style>
 </head>
 <body id="body">
-    <header id="header">
-        <h1 id="albumTitle">NFC Souvenirs</h1>
+
+    <header>
+        <div class="header-content">
+            <h1 id="albumTitle">NFC Souvenirs</h1>
+            <div class="album-subtitle" id="albumSubtitle">Galería de Recuerdos</div>
+        </div>
     </header>
 
-    <main class="gallery-container">
+    <main class="gallery-wrapper">
         <div id="loader" class="loader"></div>
         <div id="gallery" class="gallery"></div>
         
-        <div id="error" class="error-container" style="display:none;">
-            <p id="errorMsg" style="color: var(--text-muted);"></p>
-            <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn-cta">Instalar NFC Souvenirs</a>
+        <div id="error" class="error-state" style="display:none;">
+            <h2 id="errorMsgTitle" style="font-family: 'Outfit', sans-serif; font-size: 2rem;">¡Vaya! Algo pasó</h2>
+            <p id="errorMsg" style="color: var(--text-muted); max-width: 400px; margin-top: 1rem;"></p>
+            <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn-premium">Abrir en la App</a>
         </div>
     </main>
 
-    <!-- Professional Viewer with Carousel Navigation -->
+    <!-- Professional Inmersive Viewer -->
     <div id="viewer">
+        <div id="viewer-backdrop"></div>
+        
         <div class="viewer-header">
-            <div id="mediaCounter" style="font-weight: 600; font-size: 14px;">1 / 1</div>
-            <button class="close-btn" onclick="closeViewer()">✕</button>
+            <span style="font-family: 'Outfit', sans-serif; font-weight: 600; letter-spacing: 0.1em; opacity: 0.8;">MEMORIA</span>
+            <button class="v-btn close-x" onclick="closeViewer()">✕</button>
         </div>
         
-        <div class="viewer-main">
-            <div class="nav-controls">
-                <button class="nav-btn" onclick="prevMedia(event)">❮</button>
-                <button class="nav-btn" onclick="nextMedia(event)">❯</button>
-            </div>
-            <div id="viewer-content-wrapper" class="viewer-content-wrapper"></div>
+        <div class="viewer-controls">
+            <button class="v-btn" onclick="changeMedia(-1)">❮</button>
+            <button class="v-btn" onclick="changeMedia(1)">❯</button>
         </div>
         
-        <div id="viewer-footer" class="viewer-footer">Recuerdo</div>
+        <div class="viewer-content" id="viewer-content"></div>
+        
+        <div class="viewer-info" id="mediaInfo">1 / 1</div>
     </div>
 
     <script>
@@ -294,178 +316,154 @@
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentAlbumMedia = [];
-        let currentIndex = 0;
+        let albumMedia = [];
+        let currentIdx = 0;
+        let touchStartX = 0;
 
         async function init() {
-            const pathParts = window.location.pathname.split('/');
-            let uuid = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
-
+            const uuid = window.location.pathname.split('/').pop();
+            
             if (!uuid || uuid.length < 30) {
-                showError("Escanea un imán para ver tus recuerdos.");
+                showError("Escanea un souvenir NFC para ver la magia.", "Sin conexión activa");
                 return;
             }
 
             try {
-                // Fetch Tag + Album + Category + Media in one go (Embedded select)
-                const { data: tag, error: tagError } = await supabaseClient
+                const { data: tag, error } = await supabaseClient
                     .from('tags')
-                    .select(`
-                        status, 
-                        album_id, 
-                        albums(
-                            title, 
-                            is_published, 
-                            use_category_style, 
-                            categories(style_json),
-                            media(url, type, order_index)
-                        )
-                    `)
+                    .select('status, album_id, albums(title, is_published, use_category_style, categories(style_json), media(url, type, order_index))')
                     .eq('uuid', uuid)
                     .maybeSingle();
 
-                if (tagError || !tag) {
-                    showError("Este imán no está registrado.");
+                if (error || !tag) {
+                    showError("Este recuerdo aún no ha sido inmortalizado.", "No encontrado");
                     return;
                 }
 
                 if (tag.status === 'unassigned' || !tag.album_id) {
                     document.getElementById('albumTitle').innerText = "Nuevo Souvenir";
-                    showError("¡Imán detectado! Pero aún no tiene fotos vinculadas.");
+                    showError("Este imán está listo para guardar tus fotos. ¡Vincúlalo en la App!", "Pendiente de vínculo");
                     return;
                 }
 
                 const album = tag.albums;
                 if (!album) {
-                    showError("El álbum es privado o no se pudo cargar.");
+                    showError("El dueño ha puesto este álbum en modo privado.", "Acceso restringido");
                     return;
                 }
 
-                applyStyles(album);
+                // Apply Dynamic Styles
+                if (album.use_category_style && album.categories?.style_json) {
+                    const s = album.categories.style_json;
+                    document.documentElement.style.setProperty('--gradient-start', s.gradientStart + '44');
+                    document.documentElement.style.setProperty('--primary', s.accentColor || s.gradientStart);
+                    document.documentElement.style.setProperty('--accent', s.accentColor || s.gradientStart);
+                }
+
                 document.getElementById('albumTitle').innerText = album.title;
+                albumMedia = (album.media || []).sort((a, b) => a.order_index - b.order_index);
                 
-                // Sort media by order_index
-                currentAlbumMedia = (album.media || []).sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
-                
-                renderGallery(currentAlbumMedia);
+                renderGallery();
 
             } catch (e) {
-                showError("Conexión perdida. Reintenta en unos segundos.");
+                showError("No pudimos conectar con la nube. Revisa tu conexión.", "Error de red");
             } finally {
                 document.getElementById('loader').style.display = 'none';
             }
         }
 
-        function applyStyles(album) {
-            console.log("Aplicando estilos:", album.use_category_style, album.categories);
-            if (album.use_category_style && album.categories && album.categories.style_json) {
-                const style = album.categories.style_json;
-                const body = document.getElementById('body');
-                
-                if (style.gradientStart) {
-                    const hex = style.gradientStart.replace('#', '');
-                    const r = parseInt(hex.substring(0, 2), 16);
-                    const g = parseInt(hex.substring(2, 4), 16);
-                    const b = parseInt(hex.substring(4, 6), 16);
-                    body.style.setProperty('--gradient-start', `rgba(${r}, ${g}, ${b}, 0.25)`);
-                    body.style.setProperty('--primary', style.accentColor || style.gradientStart);
-                    body.style.setProperty('--accent', style.accentColor || style.gradientStart);
-                }
-            }
-        }
-
-        function renderGallery(media) {
+        function renderGallery() {
             const container = document.getElementById('gallery');
-            if (media.length === 0) {
-                showError("El álbum está vacío. Sube fotos desde la App.");
+            if (albumMedia.length === 0) {
+                showError("El álbum está vinculado pero aún no tiene fotos subidas.", "Galería vacía");
                 return;
             }
-            
-            media.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'media-item';
-                div.onclick = () => openViewer(index);
+
+            albumMedia.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'media-item';
+                el.style.transitionDelay = `${index * 0.05}s`;
+                el.onclick = () => openViewer(index);
 
                 if (item.type === 'video') {
-                    const video = document.createElement('video');
-                    video.src = item.url + "#t=0.1";
-                    video.muted = true;
-                    video.playsInline = true;
-                    div.appendChild(video);
-                    
-                    const indicator = document.createElement('div');
-                    indicator.className = 'video-indicator';
-                    indicator.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span>VIDEO</span>';
-                    div.appendChild(indicator);
+                    const v = document.createElement('video');
+                    v.src = item.url + "#t=0.5";
+                    v.muted = true; v.playsInline = true;
+                    el.appendChild(v);
+                    const tag = document.createElement('div');
+                    tag.className = 'video-tag';
+                    tag.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+                    el.appendChild(tag);
                 } else {
                     const img = document.createElement('img');
-                    img.src = item.url;
-                    img.loading = "lazy";
-                    div.appendChild(img);
+                    img.src = item.url; img.loading = "lazy";
+                    el.appendChild(img);
                 }
-                container.appendChild(div);
+                container.appendChild(el);
+                
+                // Trigger animation
+                setTimeout(() => el.classList.add('show'), 100);
             });
         }
 
         function openViewer(index) {
-            currentIndex = index;
+            currentIdx = index;
             updateViewer();
             document.getElementById('viewer').style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
 
         function updateViewer() {
-            const container = document.getElementById('viewer-content-wrapper');
-            const counter = document.getElementById('mediaCounter');
-            const item = currentAlbumMedia[currentIndex];
-            
-            container.innerHTML = '';
-            counter.innerText = `${currentIndex + 1} / ${currentAlbumMedia.length}`;
+            const item = albumMedia[currentIdx];
+            const content = document.getElementById('viewer-content');
+            const backdrop = document.getElementById('viewer-backdrop');
+            const info = document.getElementById('mediaInfo');
 
+            content.innerHTML = '';
+            info.innerText = `${currentIdx + 1} / ${albumMedia.length}`;
+            
             if (item.type === 'video') {
-                const video = document.createElement('video');
-                video.src = item.url;
-                video.controls = true;
-                video.autoplay = true;
-                container.appendChild(video);
+                const v = document.createElement('video');
+                v.src = item.url; v.controls = true; v.autoplay = true;
+                content.appendChild(v);
+                backdrop.style.backgroundImage = 'none';
+                backdrop.style.backgroundColor = '#000';
             } else {
                 const img = document.createElement('img');
                 img.src = item.url;
-                container.appendChild(img);
+                content.appendChild(img);
+                backdrop.style.backgroundImage = `url(${item.url})`;
             }
         }
 
-        function nextMedia(e) {
-            if (e) e.stopPropagation();
-            currentIndex = (currentIndex + 1) % currentAlbumMedia.length;
-            updateViewer();
-        }
-
-        function prevMedia(e) {
-            if (e) e.stopPropagation();
-            currentIndex = (currentIndex - 1 + currentAlbumMedia.length) % currentAlbumMedia.length;
+        function changeMedia(dir) {
+            currentIdx = (currentIdx + dir + albumMedia.length) % albumMedia.length;
             updateViewer();
         }
 
         function closeViewer() {
-            const viewer = document.getElementById('viewer');
-            const container = document.getElementById('viewer-content-wrapper');
-            container.innerHTML = '';
-            viewer.style.display = 'none';
+            document.getElementById('viewer').style.display = 'none';
+            document.getElementById('viewer-content').innerHTML = '';
             document.body.style.overflow = 'auto';
         }
 
-        // Teclado para navegación en PC
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('viewer').style.display === 'flex') {
-                if (e.key === 'ArrowRight') nextMedia();
-                if (e.key === 'ArrowLeft') prevMedia();
-                if (e.key === 'Escape') closeViewer();
-            }
+        // Gestures & Keyboard
+        window.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeViewer();
+            if (e.key === 'ArrowRight') changeMedia(1);
+            if (e.key === 'ArrowLeft') changeMedia(-1);
         });
 
-        function showError(msg) {
+        const v = document.getElementById('viewer');
+        v.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+        v.addEventListener('touchend', e => {
+            const diff = touchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) changeMedia(diff > 0 ? 1 : -1);
+        });
+
+        function showError(msg, title) {
             document.getElementById('errorMsg').innerText = msg;
+            document.getElementById('errorMsgTitle').innerText = title;
             document.getElementById('error').style.display = 'flex';
             document.getElementById('gallery').style.display = 'none';
             document.getElementById('loader').style.display = 'none';
