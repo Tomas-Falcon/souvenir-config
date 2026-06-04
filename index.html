@@ -2,463 +2,331 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC Souvenirs - Tu Portal de Recuerdos Físicos y Digitales</title>
-    <meta name="description" content="Vincula tus recuerdos digitales a objetos físicos con NFC Souvenirs. Escanea imanes y revive momentos inolvidables al instante.">
-    
-    <!-- Google Fonts: Outfit & Inter -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NFC Souvenirs | Gestiona tus Recuerdos</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
     <style>
-        /* Modern Design System & CSS Variables */
         :root {
-            --bg-dark: #090a16;
-            --bg-card: rgba(18, 20, 38, 0.7);
-            --border-card: rgba(255, 255, 255, 0.08);
-            --primary: #6366f1; /* Indigo */
-            --primary-glow: rgba(99, 102, 241, 0.15);
-            --secondary: #a855f7; /* Purple */
-            --accent: #22c55e; /* Green */
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --font-display: 'Outfit', sans-serif;
-            --font-body: 'Inter', sans-serif;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg-dark: #07090e;
+            --primary: #6366f1;
+            --accent: #a855f7;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
 
         body {
             background-color: var(--bg-dark);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
-            background-attachment: fixed;
             color: var(--text-main);
-            font-family: var(--font-body);
-            line-height: 1.6;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
+            display: flex; flex-direction: column;
+            overflow-x: hidden;
         }
 
-        header {
-            padding: 2rem 1.5rem;
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
-            color: var(--text-main);
-        }
-
-        .logo-icon {
-            width: 42px;
-            height: 42px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-            animation: pulse-glow 3s infinite;
-        }
-
-        .logo-text {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            background: linear-gradient(to right, #ffffff, #d8b4fe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem 1.5rem 4rem 1.5rem;
-            max-width: 1000px;
-            width: 100%;
-            margin: 0 auto;
-        }
-
-        /* Success & Verification Card */
-        .card {
-            background-color: var(--bg-card);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-card);
-            border-radius: 24px;
-            padding: 3rem 2rem;
-            width: 100%;
-            max-width: 600px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: var(--transition);
-        }
-
-        .card::before {
+        body::before {
             content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            position: fixed;
+            top: 0; left: 0; right: 0; height: 100vh;
+            background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 80%);
+            z-index: -1; pointer-events: none;
         }
 
-        /* Verification Badge State Styles */
-        .icon-badge {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: rgba(34, 197, 94, 0.1);
-            border: 2px dashed var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--accent);
-            margin-bottom: 2rem;
-            animation: rotate-in 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* --- Auth View --- */
+        #auth-view {
+            flex: 1; display: none; align-items: center; justify-content: center; padding: 2rem;
         }
 
-        .icon-badge.nfc-normal {
-            background-color: rgba(99, 102, 241, 0.1);
-            border-color: var(--primary);
-            color: var(--primary);
+        .auth-card {
+            background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--radius-lg);
+            padding: 3rem 2rem; width: 100%; max-width: 400px; text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
         }
 
-        h1 {
-            font-family: var(--font-display);
-            font-size: 2.25rem;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 1rem;
-            letter-spacing: -0.02em;
+        .auth-logo {
+            width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 18px; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
         }
 
-        .card-p {
-            font-size: 1.05rem;
-            color: var(--text-muted);
-            margin-bottom: 2.5rem;
-            max-width: 480px;
-        }
+        .auth-card h2 { font-family: 'Outfit', sans-serif; font-size: 2rem; margin-bottom: 0.5rem; }
+        .auth-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem; }
 
-        /* Buttons & CTAs */
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            width: 100%;
-            max-width: 320px;
-        }
-
-        .btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            padding: 1rem 1.75rem;
-            border-radius: 12px;
-            font-family: var(--font-display);
-            font-size: 1.05rem;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: var(--transition);
-            border: none;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: #ffffff;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 22px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-outline {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-card);
-            color: var(--text-main);
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-        }
-
-        /* Demo Souvenir Showcase */
-        .demo-section {
-            margin-top: 5rem;
-            width: 100%;
-            text-align: center;
-        }
-
-        .demo-title {
-            font-family: var(--font-display);
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 3rem;
-            background: linear-gradient(to right, #fff, #9ca3af);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .grid-steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            width: 100%;
-        }
-
-        .step-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-card);
-            border-radius: 20px;
-            padding: 2rem;
-            text-align: left;
+        .form-group { text-align: left; margin-bottom: 1.2rem; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .form-group input {
+            width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 0.8rem 1rem; color: white; font-family: inherit; font-size: 1rem;
             transition: var(--transition);
         }
+        .form-group input:focus { border-color: var(--primary); background: rgba(0,0,0,0.4); outline: none; }
 
-        .step-card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.04);
-            border-color: rgba(99, 102, 241, 0.3);
+        .btn-auth {
+            width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none; border-radius: 12px; color: white; font-family: 'Outfit', sans-serif;
+            font-weight: 700; font-size: 1.1rem; cursor: pointer; transition: var(--transition);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
         }
+        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4); }
+        .btn-auth:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .step-num {
-            font-family: var(--font-display);
-            font-size: 3rem;
-            font-weight: 800;
-            line-height: 1;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
+        .auth-toggle { margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted); }
+        .auth-toggle span { color: var(--primary); cursor: pointer; font-weight: 600; }
+
+        /* --- App View --- */
+        #app-view { flex: 1; display: none; flex-direction: column; }
+
+        nav {
+            padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center;
+            backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;
         }
+        .nav-logo { display: flex; align-items: center; gap: 0.8rem; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.3rem; }
+        .nav-logo div { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 8px; }
 
-        .step-card h3 {
-            font-family: var(--font-display);
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
+        .user-actions { display: flex; gap: 1rem; align-items: center; }
+        .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; transition: var(--transition); }
+        .btn-logout:hover { background: rgba(255,255,255,0.05); color: white; }
+
+        .content { max-width: 1200px; width: 100%; margin: 0 auto; padding: 2rem; }
+
+        .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
+        .dashboard-header h2 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; font-weight: 900; letter-spacing: -0.04em; }
+
+        .btn-add {
+            background: var(--primary); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 12px;
+            font-family: 'Outfit', sans-serif; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2); transition: var(--transition);
         }
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4); }
 
-        .step-card p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
+        /* Album Grid */
+        .albums-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        
+        .album-card {
+            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md);
+            overflow: hidden; transition: var(--transition); cursor: pointer; position: relative;
         }
+        .album-card:hover { transform: translateY(-5px); border-color: var(--primary); background: rgba(255,255,255,0.05); }
 
-        footer {
-            padding: 3rem 1.5rem;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            border-top: 1px solid var(--border-card);
-            background: rgba(0, 0, 0, 0.2);
-            width: 100%;
-            margin-top: auto;
-        }
+        .album-cover { width: 100%; aspect-ratio: 16/9; background: #1a1c23; position: relative; overflow: hidden; }
+        .album-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+        .album-card:hover .album-cover img { transform: scale(1.05); }
+        .no-cover { display: flex; align-items: center; justify-content: center; height: 100%; color: rgba(255,255,255,0.1); }
 
-        /* Animations */
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4); }
-            50% { box-shadow: 0 4px 30px rgba(168, 85, 247, 0.6); }
-        }
+        .album-info { padding: 1.2rem; }
+        .album-info h3 { font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 0.3rem; }
+        .album-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
 
-        @keyframes rotate-in {
-            0% { transform: scale(0.5) rotate(-180deg); opacity: 0; }
-            100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .status-active { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .status-pending { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
 
-        /* Custom Alert Banner */
-        .toast-success {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            border-radius: 12px;
-            padding: 0.75rem 1rem;
-            color: #4ade80;
-            font-size: 0.95rem;
-            font-weight: 500;
-            margin-bottom: 2rem;
-            animation: slide-down 0.5s ease-out;
-        }
+        /* Loader */
+        .loader-full { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-dark); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        @keyframes slide-down {
-            0% { transform: translateY(-20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-
-        @media (max-width: 640px) {
-            h1 { font-size: 1.85rem; }
-            .card { padding: 2rem 1.5rem; }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .dashboard-header h2 { font-size: 2rem; }
+            .content { padding: 1rem; }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <a href="#" class="logo-container">
-            <div class="logo-icon">
-                <!-- Glowing Tag Icon SVG -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                    <path d="M12 6v12M6 12h12"/>
-                </svg>
+    <div id="loader" class="loader-full"><div class="spinner"></div></div>
+
+    <!-- Auth View -->
+    <div id="auth-view">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v12M6 12h12"/></svg>
             </div>
-            <span class="logo-text">NFC Souvenirs</span>
-        </a>
-    </header>
+            <h2 id="auth-title">Bienvenido</h2>
+            <p id="auth-desc">Entra para gestionar tus recuerdos físicos.</p>
 
-    <main>
-        <!-- Card content dynamically modified depending on landing intent -->
-        <div class="card" id="mainCard">
-            <!-- Toast notification for Signup confirmation -->
-            <div id="signupToast" class="toast-success" style="display: none;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                <span>¡Correo electrónico verificado con éxito!</span>
-            </div>
+            <form id="auth-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-auth" id="btn-submit">Entrar</button>
+            </form>
 
-            <div class="icon-badge nfc-normal" id="statusBadge">
-                <!-- Default NFC / App Icon SVG -->
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
-                    <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
-                    <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-                </svg>
-            </div>
-
-            <h1 id="cardTitle">Servidor de Configuración</h1>
-            <p class="card-p" id="cardDesc">
-                Este servidor gestiona el direccionamiento profundo e inicialización de tus imanes físicos NFC de souvenirs. 
-                Descarga la aplicación completa para empezar a vincular tus mejores memorias multimedia.
-            </p>
-
-            <div class="btn-group">
-                <a href="https://play.google.com/store/apps/details?id=com.tusouvenir.app" class="btn btn-primary" id="primaryBtn">
-                    <!-- Google Play Store icon placeholder -->
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                    <span>Instalar App Completa</span>
-                </a>
-                <button onclick="window.location.reload();" class="btn btn-outline" id="secondaryBtn">
-                    Actualizar Estado
-                </button>
+            <div class="auth-toggle">
+                <span id="toggle-text">¿No tienes cuenta? Regístrate</span>
             </div>
         </div>
+    </div>
 
-        <!-- How It Works Section -->
-        <section class="demo-section">
-            <h2 class="demo-title">Cómo Funciona la Magia</h2>
-            
-            <div class="grid-steps">
-                <div class="step-card">
-                    <div class="step-num">01</div>
-                    <h3>Acerca tu Teléfono</h3>
-                    <p>Toca tu imán físico NFC Souvenir con la parte trasera de tu smartphone. No se requiere abrir aplicaciones.</p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-num">02</div>
-                    <h3>Revive el Momento</h3>
-                    <p>La tecnología instantánea carga de forma inmediata tu galería multimedia personalizada (fotos y videos en la nube).</p>
-                </div>
-                
-                <div class="step-card">
-                    <div class="step-num">03</div>
-                    <h3>Personaliza a tu gusto</h3>
-                    <p>Instala la aplicación móvil completa para reclamar la propiedad del imán y subir tus propios recuerdos familiares.</p>
-                </div>
+    <!-- Main App View -->
+    <div id="app-view">
+        <nav>
+            <div class="nav-logo">
+                <div></div>
+                <span>NFC Souvenirs</span>
             </div>
-        </section>
-    </main>
+            <div class="user-actions">
+                <span id="user-email" style="font-size: 0.8rem; color: var(--text-muted); display: none;"></span>
+                <button class="btn-logout" id="logout-btn">Cerrar Sesión</button>
+            </div>
+        </nav>
 
-    <footer>
-        <p>&copy; 2026 NFC Souvenirs Platform. Todos los derechos reservados.</p>
-    </footer>
+        <main class="content">
+            <div class="dashboard-header">
+                <div>
+                    <h2>Mis Recuerdos</h2>
+                    <p style="color: var(--text-muted);">Gestiona tus imanes y álbumes</p>
+                </div>
+                <!-- Nota: En web no hay escaneo NFC directo fácilmente, pero podemos dejar un botón para añadir vía UUID si se conoce -->
+                <button class="btn-add" onclick="alert('Funcionalidad próximamente: Vincular nuevo imán vía código UUID')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Nuevo Álbum
+                </button>
+            </div>
 
-    <!-- Verification / Confirmation URL Detector Script -->
+            <div id="albums-container" class="albums-grid">
+                <!-- Albums load here -->
+            </div>
+        </main>
+    </div>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Analizar parámetros URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const tokenHash = urlParams.get('token_hash');
-            const type = urlParams.get('type');
+        const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let isSignUp = false;
+
+        async function init() {
+            const { data: { session } } = await supabase.auth.getSession();
             
-            // También comprobar el fragmento/hash (#error=...) que a veces adjunta Supabase
-            const hash = window.location.hash;
+            if (session) {
+                showApp(session.user);
+            } else {
+                showAuth();
+            }
+            hideLoader();
+        }
+
+        function showAuth() {
+            document.getElementById('auth-view').style.display = 'flex';
+            document.getElementById('app-view').style.display = 'none';
+        }
+
+        async function showApp(user) {
+            document.getElementById('auth-view').style.display = 'none';
+            document.getElementById('app-view').style.display = 'flex';
+            document.getElementById('user-email').innerText = user.email;
+            document.getElementById('user-email').style.display = 'block';
+            loadAlbums();
+        }
+
+        async function loadAlbums() {
+            const container = document.getElementById('albums-container');
+            container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Cargando tus álbumes...</p>';
+
+            try {
+                const { data: albums, error } = await supabase
+                    .from('albums')
+                    .select('*, categories(name)')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (albums.length === 0) {
+                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 4rem; background: var(--card-bg); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.1);">Aún no has creado ningún álbum. ¡Vincula tu primer imán!</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                albums.forEach(album => {
+                    const card = document.createElement('div');
+                    card.className = 'album-card';
+                    card.onclick = () => window.location.href = `m/${album.id}`; // Redirigir al visor
+                    
+                    const isPub = album.is_published;
+                    
+                    card.innerHTML = `
+                        <div class="album-cover">
+                            ${album.cover_url ? `<img src="${album.cover_url}" alt="${album.title}">` : `<div class="no-cover"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div>`}
+                        </div>
+                        <div class="album-info">
+                            <h3>${album.title}</h3>
+                            <div class="album-meta">
+                                <span>${album.categories ? album.categories.name : 'Sin categoría'}</span>
+                                <span class="status-pill ${isPub ? 'status-active' : 'status-pending'}">${isPub ? 'Liberado' : 'Bloqueado'}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (e) {
+                container.innerHTML = `<p style="color: #ef4444;">Error al cargar: ${e.message}</p>`;
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('btn-submit');
             
-            // Si viene de confirmación de registro
-            if ((tokenHash && type === 'signup') || hash.includes("access_token") || type === 'signup') {
-                // 1. Mostrar banner de éxito
-                document.getElementById('signupToast').style.display = 'flex';
-                
-                // 2. Modificar el Badge a modo éxito verificado (Verde con Tick)
-                const badge = document.getElementById('statusBadge');
-                badge.className = 'icon-badge'; // Remover estilo normal
-                badge.innerHTML = `
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                `;
-                
-                // 3. Modificar Textos
-                document.getElementById('cardTitle').innerText = "¡Verificación Exitosa!";
-                document.getElementById('cardDesc').innerHTML = `
-                    Tu correo electrónico ha sido verificado con éxito y tu cuenta ya se encuentra activa.<br><br>
-                    <strong>Ya puedes regresar a la aplicación móvil "NFC Souvenirs"</strong> en tu dispositivo para iniciar sesión y empezar a vincular tus imanes.
-                `;
-                
-                // 4. Modificar Botones para hacer CTA de regreso a la app
-                const primaryBtn = document.getElementById('primaryBtn');
-                primaryBtn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    <span>Volver a la App</span>
-                `;
-                // Intentar redirección nativa al esquema profundo para abrir la app automáticamente
-                primaryBtn.href = "nfc-souvenirs://verify-success"; // Esquema profundo opcional si se registra en el intent filter
-                
-                const secondaryBtn = document.getElementById('secondaryBtn');
-                secondaryBtn.style.display = 'none'; // No se necesita botón secundario en verificación
+            btn.disabled = true;
+            btn.innerText = isSignUp ? 'Registrando...' : 'Entrando...';
+
+            try {
+                if (isSignUp) {
+                    const { error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    alert('¡Registro exitoso! Revisa tu email para confirmar.');
+                } else {
+                    const { error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = isSignUp ? 'Registrarme' : 'Entrar';
             }
         });
+
+        document.getElementById('toggle-text').addEventListener('click', () => {
+            isSignUp = !isSignUp;
+            document.getElementById('auth-title').innerText = isSignUp ? 'Crea tu Cuenta' : 'Bienvenido';
+            document.getElementById('auth-desc').innerText = isSignUp ? 'Empieza a inmortalizar tus recuerdos hoy.' : 'Entra para gestionar tus recuerdos físicos.';
+            document.getElementById('btn-submit').innerText = isSignUp ? 'Registrarme' : 'Entrar';
+            document.getElementById('toggle-text').innerText = isSignUp ? '¿Ya tienes cuenta? Entra aquí' : '¿No tienes cuenta? Regístrate';
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.reload();
+        });
+
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+
+        init();
     </script>
 </body>
 </html>
