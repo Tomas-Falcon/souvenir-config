@@ -59,8 +59,9 @@
         .btn-auth {
             width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--primary), var(--accent));
             border: none; border-radius: 12px; color: white; font-family: 'Outfit', sans-serif;
-            font-weight: 700; cursor: pointer;
+            font-weight: 700; cursor: pointer; transition: var(--transition);
         }
+        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2); }
 
         /* --- App View --- */
         #app-view { flex: 1; display: none; flex-direction: column; }
@@ -71,52 +72,44 @@
         .nav-logo { display: flex; align-items: center; gap: 0.8rem; font-family: 'Outfit', sans-serif; font-weight: 800; }
         .nav-logo div { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; }
 
+        .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+
         .content { max-width: 1200px; width: 100%; margin: 0 auto; padding: 2rem; }
         
         .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
         .dashboard-header h2 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; letter-spacing: -0.04em; }
 
-        /* Notification Section */
         .requests-panel {
             background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);
             border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; display: none;
         }
         .request-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid rgba(245, 158, 11, 0.1); }
-        .request-item:last-child { border: none; }
 
-        /* Album Grid */
         .albums-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
         
         .album-card {
             background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: var(--radius-md); overflow: hidden; transition: var(--transition);
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; cursor: pointer;
         }
         .album-card:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); }
 
-        .album-cover { width: 100%; aspect-ratio: 16/9; background: #1a1c23; position: relative; cursor: pointer; }
+        .album-cover { width: 100%; aspect-ratio: 16/9; background: #1a1c23; position: relative; }
         .album-cover img { width: 100%; height: 100%; object-fit: cover; }
         
-        .album-actions {
-            position: absolute; top: 12px; right: 12px; display: flex; gap: 8px;
-        }
+        .album-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
         .icon-btn {
             background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
             color: white; width: 36px; height: 32px; border-radius: 8px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
         }
-        .icon-btn:hover { background: var(--primary); transform: scale(1.1); }
 
         .album-info { padding: 1.5rem; }
-        .album-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem; }
-        .album-title-row h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; }
-
         .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
         .status-public { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid var(--success); }
         .status-protected { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
-        .status-private { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.2); }
+        .status-private { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.2); }
 
-        /* Modal / Dialog */
         .modal {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
@@ -126,30 +119,21 @@
             background: #11131a; border: 1px solid rgba(255,255,255,0.1);
             border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 500px;
         }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         
         .privacy-option {
             display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; margin-bottom: 1rem; cursor: pointer; transition: var(--transition);
+            border-radius: 12px; margin-bottom: 1rem; cursor: pointer;
         }
         .privacy-option.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
-        .privacy-option h4 { font-size: 1rem; margin-bottom: 2px; }
-        .privacy-option p { font-size: 0.8rem; color: var(--text-muted); }
-
-        .btn-group-modal { display: flex; gap: 1rem; margin-top: 2rem; }
-        .btn-secondary { flex: 1; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 12px; cursor: pointer; }
-        .btn-danger { background: var(--danger); border: none; color: white; border-radius: 12px; padding: 0.8rem 1.5rem; cursor: pointer; }
 
         .loader-full { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Media Upload */
         .upload-zone {
-            border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 2rem;
-            text-align: center; margin-top: 1.5rem; cursor: pointer; transition: var(--transition);
+            border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem;
+            text-align: center; margin-top: 1rem; cursor: pointer;
         }
-        .upload-zone:hover { border-color: var(--primary); background: rgba(255,255,255,0.02); }
     </style>
 </head>
 <body>
@@ -160,13 +144,15 @@
     <div id="auth-view">
         <div class="auth-card">
             <h2 id="auth-title">Bienvenido</h2>
-            <p id="auth-desc">Gestiona tus recuerdos físicos.</p>
+            <p id="auth-desc" style="margin-bottom: 2rem;">Gestiona tus recuerdos físicos.</p>
             <form id="auth-form">
                 <div class="form-group"><label>Email</label><input type="email" id="email" required></div>
                 <div class="form-group"><label>Contraseña</label><input type="password" id="password" required></div>
                 <button type="submit" class="btn-auth" id="btn-submit">Entrar</button>
             </form>
-            <div class="auth-toggle"><span id="toggle-text">¿No tienes cuenta? Regístrate</span></div>
+            <div class="auth-toggle" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                <span id="toggle-text" style="color: var(--primary); cursor: pointer; font-weight: 600;">¿No tienes cuenta? Regístrate</span>
+            </div>
         </div>
     </div>
 
@@ -174,9 +160,7 @@
     <div id="app-view">
         <nav>
             <div class="nav-logo"><div></div><span>NFC Souvenirs</span></div>
-            <div class="user-actions">
-                <button class="btn-logout" id="logout-btn">Cerrar Sesión</button>
-            </div>
+            <div class="user-actions"><button class="btn-logout" id="logout-btn">Cerrar Sesión</button></div>
         </nav>
 
         <main class="content">
@@ -184,12 +168,10 @@
                 <h4 style="color: var(--warning); margin-bottom: 1rem;">🔔 Solicitudes de Acceso</h4>
                 <div id="requests-list"></div>
             </div>
-
             <div class="dashboard-header">
                 <div><h2>Mis Recuerdos</h2><p style="color: var(--text-muted);">Administra tus imanes y privacidad</p></div>
-                <button class="btn-add" onclick="alert('Usa la App móvil para vincular nuevos imanes vía NFC')">Vincular Nuevo</button>
+                <button class="btn-auth" style="width: auto; padding: 0.8rem 1.5rem;" onclick="alert('Usa la App móvil para vincular nuevos imanes vía NFC')">Vincular Nuevo</button>
             </div>
-
             <div id="albums-container" class="albums-grid"></div>
         </main>
     </div>
@@ -197,44 +179,21 @@
     <!-- Edit Modal -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-album-title">Ajustes del Álbum</h3>
-                <button class="v-close" onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                <h3>Ajustes del Álbum</h3>
+                <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
-            
-            <div class="form-group">
-                <label>Nombre del Álbum</label>
-                <input type="text" id="edit-title">
+            <div class="form-group"><label>Nombre del Álbum</label><input type="text" id="edit-title"></div>
+            <div style="margin-top: 1.5rem;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem;">PRIVACIDAD</label>
+                <div class="privacy-option" onclick="setPrivacy(true, false)" id="opt-private"><div>🔒</div><div><h4>Privado</h4><p>Solo tú puedes verlo.</p></div></div>
+                <div class="privacy-option" onclick="setPrivacy(false, false)" id="opt-protected"><div>🛡️</div><div><h4>Protegido</h4><p>Requiere aprobación.</p></div></div>
+                <div class="privacy-option" onclick="setPrivacy(false, true)" id="opt-public"><div>🌍</div><div><h4>Público</h4><p>Acceso directo.</p></div></div>
             </div>
-
-            <div style="margin-top: 2rem;">
-                <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase;">Privacidad y Acceso</label>
-                
-                <div class="privacy-option" onclick="setPrivacy(true, false)" id="opt-private">
-                    <div style="font-size: 1.5rem;">🔒</div>
-                    <div><h4>Privado</h4><p>Solo tú puedes verlo. Nadie más tiene acceso.</p></div>
-                </div>
-
-                <div class="privacy-option" onclick="setPrivacy(false, false)" id="opt-protected">
-                    <div style="font-size: 1.5rem;">🛡️</div>
-                    <div><h4>Protegido</h4><p>Invitados deben solicitar acceso y tú apruebas.</p></div>
-                </div>
-
-                <div class="privacy-option" onclick="setPrivacy(false, true)" id="opt-public">
-                    <div style="font-size: 1.5rem;">🌍</div>
-                    <div><h4>Público</h4><p>Cualquiera que escanee el imán puede verlo.</p></div>
-                </div>
-            </div>
-
-            <div class="upload-zone" onclick="document.getElementById('file-input').click()">
-                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📸</div>
-                <p>Subir Fotos o Video</p>
-                <input type="file" id="file-input" style="display:none" multiple onchange="handleUpload(this)">
-            </div>
-
-            <div class="btn-group-modal">
-                <button class="btn-danger" onclick="deleteAlbum()">Eliminar</button>
-                <button class="btn-auth" style="flex:2" onclick="saveSettings()">Guardar Cambios</button>
+            <div class="upload-zone" onclick="document.getElementById('file-input').click()">📸 Subir Fotos o Video<input type="file" id="file-input" style="display:none" multiple onchange="handleUpload(this)"></div>
+            <div style="display:flex; gap:10px; margin-top:2rem;">
+                <button class="btn-logout" style="flex:1" onclick="deleteAlbum()">Eliminar</button>
+                <button class="btn-auth" style="flex:2" onclick="saveSettings()">Guardar</button>
             </div>
         </div>
     </div>
@@ -242,89 +201,64 @@
     <script>
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // IMPORTANTE: Renombrado a supabaseClient para evitar colisión con el objeto global de la librería
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentEditingAlbum = null;
         let selectedPrivacy = { isPrivate: false, isPublished: false };
+        let isSignUp = false;
 
         async function init() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) showApp(session.user);
-            else showAuth();
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) showApp(); else showAuth();
+            } catch (e) { alert("Error de inicialización: " + e.message); }
             document.getElementById('loader').style.display = 'none';
         }
 
-        function showAuth() { document.getElementById('auth-view').style.display = 'flex'; }
-        function showApp() { 
-            document.getElementById('app-view').style.display = 'flex'; 
-            loadAlbums();
-            loadRequests();
-        }
+        function showAuth() { document.getElementById('auth-view').style.display = 'flex'; document.getElementById('app-view').style.display = 'none'; }
+        function showApp() { document.getElementById('app-view').style.display = 'flex'; document.getElementById('auth-view').style.display = 'none'; loadAlbums(); loadRequests(); }
 
         async function loadAlbums() {
             const container = document.getElementById('albums-container');
-            container.innerHTML = '<p>Cargando...</p>';
-            const { data: albums } = await supabase.from('albums').select('*, categories(name)').order('created_at', { ascending: false });
-            
+            container.innerHTML = '<p>Cargando recuerdos...</p>';
+            const { data: albums, error } = await supabaseClient.from('albums').select('*, categories(name)').order('created_at', { ascending: false });
+            if (error) { container.innerHTML = '<p>Error al cargar álbumes.</p>'; return; }
             container.innerHTML = '';
             albums?.forEach(album => {
-                const isPub = album.is_published;
-                const isPri = album.is_private;
-                let statusClass = 'status-protected';
-                let statusText = 'Protegido';
-                if (isPri) { statusClass = 'status-private'; statusText = 'Privado'; }
-                else if (isPub) { statusClass = 'status-public'; statusText = 'Público'; }
-
+                const isPub = album.is_published; const isPri = album.is_private;
+                let sClass = 'status-protected'; let sText = 'Protegido';
+                if (isPri) { sClass = 'status-private'; sText = 'Privado'; } else if (isPub) { sClass = 'status-public'; sText = 'Público'; }
                 const card = document.createElement('div');
                 card.className = 'album-card';
                 card.innerHTML = `
                     <div class="album-cover" onclick="window.location.href='m/${album.id}'">
-                        ${album.cover_url ? `<img src="${album.cover_url}">` : '<div class="no-cover">Sin Portada</div>'}
-                        <div class="album-actions">
-                            <button class="icon-btn" onclick="event.stopPropagation(); openEdit('${album.id}', '${album.title}', ${isPri}, ${isPub})">⚙️</button>
-                        </div>
+                        ${album.cover_url ? `<img src="${album.cover_url}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;opacity:0.2;">🖼️ Sin Portada</div>'}
+                        <div class="album-actions"><button class="icon-btn" onclick="event.stopPropagation(); openEdit('${album.id}', '${album.title}', ${isPri}, ${isPub})">⚙️</button></div>
                     </div>
-                    <div class="album-info">
-                        <div class="album-title-row"><h3>${album.title}</h3></div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:0.8rem; color:var(--text-muted)">${album.categories?.name || 'Recuerdo'}</span>
-                            <span class="status-pill ${statusClass}">${statusText}</span>
-                        </div>
-                    </div>
+                    <div class="album-info"><h3>${album.title}</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;"><span style="font-size:0.8rem;color:var(--text-muted)">${album.categories?.name || 'Recuerdo'}</span><span class="status-pill ${sClass}">${sText}</span></div></div>
                 `;
                 container.appendChild(card);
             });
         }
 
         async function loadRequests() {
-            const { data: requests } = await supabase.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
+            const { data: requests } = await supabaseClient.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
             const panel = document.getElementById('requests-panel');
-            const list = document.getElementById('requests-list');
-            if (requests && requests.length > 0) {
+            if (requests?.length > 0) {
                 panel.style.display = 'block';
-                list.innerHTML = requests.map(r => `
-                    <div class="request-item">
-                        <span>Invitado solicita acceso a <b>${r.albums.title}</b></span>
-                        <div>
-                            <button onclick="handleRequest('${r.id}', 'approved')" style="color:var(--success); background:none; border:none; cursor:pointer; margin-right:10px;">Aprobar</button>
-                            <button onclick="handleRequest('${r.id}', 'rejected')" style="color:var(--danger); background:none; border:none; cursor:pointer;">Rechazar</button>
-                        </div>
-                    </div>
+                document.getElementById('requests-list').innerHTML = requests.map(r => `
+                    <div class="request-item"><span>Acceso solicitado a <b>${r.albums.title}</b></span>
+                    <div><button onclick="handleReq('${r.id}', 'approved')" style="color:var(--success);background:none;border:none;cursor:pointer;margin-right:10px;">Aceptar</button>
+                    <button onclick="handleReq('${r.id}', 'rejected')" style="color:var(--danger);background:none;border:none;cursor:pointer;">X</button></div></div>
                 `).join('');
-            } else { panel.style.display = 'none'; }
+            } else panel.style.display = 'none';
         }
 
-        async function handleRequest(id, status) {
-            await supabase.from('pending_requests').update({ status }).eq('id', id);
-            loadRequests();
-        }
+        async function handleReq(id, status) { await supabaseClient.from('pending_requests').update({ status }).eq('id', id); loadRequests(); }
 
-        function openEdit(id, title, isPri, isPub) {
-            currentEditingAlbum = id;
-            document.getElementById('edit-title').value = title;
-            setPrivacy(isPri, isPub);
-            document.getElementById('edit-modal').style.display = 'flex';
-        }
+        function openEdit(id, title, isPri, isPub) { currentEditingAlbum = id; document.getElementById('edit-title').value = title; setPrivacy(isPri, isPub); document.getElementById('edit-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
         function setPrivacy(isPri, isPub) {
             selectedPrivacy = { isPrivate: isPri, isPublished: isPub };
@@ -335,54 +269,47 @@
         }
 
         async function saveSettings() {
-            const newTitle = document.getElementById('edit-title').value;
-            await supabase.from('albums').update({
-                title: newTitle,
-                is_private: selectedPrivacy.isPrivate,
-                is_published: selectedPrivacy.isPublished
-            }).eq('id', currentEditingAlbum);
-            closeModal(); loadAlbums();
+            const { error } = await supabaseClient.from('albums').update({ title: document.getElementById('edit-title').value, is_private: selectedPrivacy.isPrivate, is_published: selectedPrivacy.isPublished }).eq('id', currentEditingAlbum);
+            if (error) alert(error.message); else { closeModal(); loadAlbums(); }
         }
 
         async function handleUpload(input) {
             if (!input.files.length) return;
-            const albumId = currentEditingAlbum;
+            document.getElementById('loader').style.display = 'flex';
             for (const file of input.files) {
-                const name = `${Date.now()}_${file.name}`;
-                const path = `${albumId}/${name}`;
-                const type = file.type.includes('video') ? 'video' : 'image';
-                
-                await supabase.storage.from('souvenir-media').upload(path, file);
-                const { data: { publicUrl } } = supabase.storage.from('souvenir-media').getPublicUrl(path);
-                await supabase.from('media').insert({ album_id: albumId, type, url: publicUrl });
+                const path = `${currentEditingAlbum}/${Date.now()}_${file.name}`;
+                await supabaseClient.storage.from('souvenir-media').upload(path, file);
+                const { data: { publicUrl } } = supabaseClient.storage.from('souvenir-media').getPublicUrl(path);
+                await supabaseClient.from('media').insert({ album_id: currentEditingAlbum, type: file.type.includes('video') ? 'video' : 'image', url: publicUrl });
             }
-            alert('¡Archivos subidos con éxito!');
-            loadAlbums();
+            document.getElementById('loader').style.display = 'none'; loadAlbums();
         }
 
         async function deleteAlbum() {
-            if (!confirm('¿Seguro? Se borrarán todas las fotos y se desvinculará el imán.')) return;
-            await supabase.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentEditingAlbum);
-            await supabase.from('albums').delete().eq('id', currentEditingAlbum);
+            if (!confirm('¿Borrar álbum permanentemente?')) return;
+            await supabaseClient.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentEditingAlbum);
+            await supabaseClient.from('albums').delete().eq('id', currentEditingAlbum);
             closeModal(); loadAlbums();
         }
 
-        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
-
-        // Auth Listeners
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) alert(error.message); else window.location.reload();
+            const { error } = isSignUp ? await supabaseClient.auth.signUp({ email, password }) : await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message); else if (isSignUp) alert("Confirma tu email."); else window.location.reload();
         });
 
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabase.auth.signOut(); window.location.reload();
+        document.getElementById('toggle-text').addEventListener('click', () => {
+            isSignUp = !isSignUp;
+            document.getElementById('auth-title').innerText = isSignUp ? 'Registro' : 'Bienvenido';
+            document.getElementById('btn-submit').innerText = isSignUp ? 'Registrarme' : 'Entrar';
+            document.getElementById('toggle-text').innerText = isSignUp ? 'Volver al login' : '¿No tienes cuenta? Regístrate';
         });
 
-        init();
+        document.getElementById('logout-btn').addEventListener('click', async () => { await supabaseClient.auth.signOut(); window.location.reload(); });
+
+        window.onload = init;
     </script>
 </body>
 </html>
