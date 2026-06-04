@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NFC Souvenirs | Gestiona tus Recuerdos</title>
+    <!-- Script de Supabase con integridad y carga explícita -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +20,7 @@
             --card-bg: rgba(255, 255, 255, 0.03);
             --radius-lg: 24px;
             --radius-md: 16px;
-            --transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             --success: #22c55e;
             --warning: #f59e0b;
             --danger: #ef4444;
@@ -199,10 +200,12 @@
     </div>
 
     <script>
+        // Versión: 2.0.1 (Cache-Bust)
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
-        // IMPORTANTE: Renombrado a supabaseClient para evitar colisión con el objeto global de la librería
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Uso de window.supabase para evitar cualquier ambigüedad de declaración
+        const clientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentEditingAlbum = null;
         let selectedPrivacy = { isPrivate: false, isPublished: false };
@@ -210,9 +213,9 @@
 
         async function init() {
             try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
+                const { data: { session } } = await clientInstance.auth.getSession();
                 if (session) showApp(); else showAuth();
-            } catch (e) { alert("Error de inicialización: " + e.message); }
+            } catch (e) { console.error("Error init:", e); }
             document.getElementById('loader').style.display = 'none';
         }
 
@@ -222,7 +225,7 @@
         async function loadAlbums() {
             const container = document.getElementById('albums-container');
             container.innerHTML = '<p>Cargando recuerdos...</p>';
-            const { data: albums, error } = await supabaseClient.from('albums').select('*, categories(name)').order('created_at', { ascending: false });
+            const { data: albums, error } = await clientInstance.from('albums').select('*, categories(name)').order('created_at', { ascending: false });
             if (error) { container.innerHTML = '<p>Error al cargar álbumes.</p>'; return; }
             container.innerHTML = '';
             albums?.forEach(album => {
@@ -243,7 +246,7 @@
         }
 
         async function loadRequests() {
-            const { data: requests } = await supabaseClient.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
+            const { data: requests } = await clientInstance.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
             const panel = document.getElementById('requests-panel');
             if (requests?.length > 0) {
                 panel.style.display = 'block';
@@ -255,7 +258,7 @@
             } else panel.style.display = 'none';
         }
 
-        async function handleReq(id, status) { await supabaseClient.from('pending_requests').update({ status }).eq('id', id); loadRequests(); }
+        async function handleReq(id, status) { await clientInstance.from('pending_requests').update({ status }).eq('id', id); loadRequests(); }
 
         function openEdit(id, title, isPri, isPub) { currentEditingAlbum = id; document.getElementById('edit-title').value = title; setPrivacy(isPri, isPub); document.getElementById('edit-modal').style.display = 'flex'; }
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
@@ -269,7 +272,7 @@
         }
 
         async function saveSettings() {
-            const { error } = await supabaseClient.from('albums').update({ title: document.getElementById('edit-title').value, is_private: selectedPrivacy.isPrivate, is_published: selectedPrivacy.isPublished }).eq('id', currentEditingAlbum);
+            const { error } = await clientInstance.from('albums').update({ title: document.getElementById('edit-title').value, is_private: selectedPrivacy.isPrivate, is_published: selectedPrivacy.isPublished }).eq('id', currentEditingAlbum);
             if (error) alert(error.message); else { closeModal(); loadAlbums(); }
         }
 
@@ -278,17 +281,17 @@
             document.getElementById('loader').style.display = 'flex';
             for (const file of input.files) {
                 const path = `${currentEditingAlbum}/${Date.now()}_${file.name}`;
-                await supabaseClient.storage.from('souvenir-media').upload(path, file);
-                const { data: { publicUrl } } = supabaseClient.storage.from('souvenir-media').getPublicUrl(path);
-                await supabaseClient.from('media').insert({ album_id: currentEditingAlbum, type: file.type.includes('video') ? 'video' : 'image', url: publicUrl });
+                await clientInstance.storage.from('souvenir-media').upload(path, file);
+                const { data: { publicUrl } } = clientInstance.storage.from('souvenir-media').getPublicUrl(path);
+                await clientInstance.from('media').insert({ album_id: currentEditingAlbum, type: file.type.includes('video') ? 'video' : 'image', url: publicUrl });
             }
             document.getElementById('loader').style.display = 'none'; loadAlbums();
         }
 
         async function deleteAlbum() {
             if (!confirm('¿Borrar álbum permanentemente?')) return;
-            await supabaseClient.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentEditingAlbum);
-            await supabaseClient.from('albums').delete().eq('id', currentEditingAlbum);
+            await clientInstance.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentEditingAlbum);
+            await clientInstance.from('albums').delete().eq('id', currentEditingAlbum);
             closeModal(); loadAlbums();
         }
 
@@ -296,7 +299,7 @@
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const { error } = isSignUp ? await supabaseClient.auth.signUp({ email, password }) : await supabaseClient.auth.signInWithPassword({ email, password });
+            const { error } = isSignUp ? await clientInstance.auth.signUp({ email, password }) : await clientInstance.auth.signInWithPassword({ email, password });
             if (error) alert(error.message); else if (isSignUp) alert("Confirma tu email."); else window.location.reload();
         });
 
@@ -307,7 +310,7 @@
             document.getElementById('toggle-text').innerText = isSignUp ? 'Volver al login' : '¿No tienes cuenta? Regístrate';
         });
 
-        document.getElementById('logout-btn').addEventListener('click', async () => { await supabaseClient.auth.signOut(); window.location.reload(); });
+        document.getElementById('logout-btn').addEventListener('click', async () => { await clientInstance.auth.signOut(); window.location.reload(); });
 
         window.onload = init;
     </script>
