@@ -278,21 +278,48 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Reset Password View (Visible after email link) -->
+            <section id="view-reset-password" class="view">
+                <header><div><h1>Nueva Contraseña</h1><p style="color:var(--text-muted)">Actualiza tu clave de acceso.</p></div></header>
+                <div class="recent-activity" style="max-width:400px; margin: 0 auto;">
+                    <form id="reset-form">
+                        <div class="form-group"><label>Nueva Contraseña</label><input type="password" id="new-password" required minlength="6"></div>
+                        <button type="submit" class="btn-auth">Guardar Nueva Contraseña</button>
+                    </form>
+                </div>
+            </section>
         </main>
     </div>
 
     <!-- Auth View -->
     <div id="auth-view">
-        <div class="auth-card">
+        <div class="auth-card" id="login-form-container">
             <h2 id="auth-title">NFC Souvenirs</h2>
             <p id="auth-desc" style="margin-bottom: 2rem; color:var(--text-muted)">Inicia sesión para gestionar tus recuerdos.</p>
             <form id="auth-form">
                 <div class="form-group"><label>Email</label><input type="email" id="email" required></div>
-                <div class="form-group"><label>Contraseña</label><input type="password" id="password" required></div>
+                <div class="form-group" id="pass-group"><label>Contraseña</label><input type="password" id="password" required></div>
                 <button type="submit" class="btn-auth" id="btn-submit">Entrar</button>
             </form>
+            <div id="forgot-password-link" style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+                ¿Olvidaste tu contraseña?
+            </div>
             <div style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
                 <span id="toggle-auth" style="color: var(--primary); cursor: pointer; font-weight: 600;">¿No tienes cuenta? Regístrate</span>
+            </div>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div class="auth-card" id="forgot-form-container" style="display:none;">
+            <h2>Recuperar Cuenta</h2>
+            <p style="margin-bottom: 2rem; color:var(--text-muted)">Enviaremos un enlace a tu email para resetear tu clave.</p>
+            <form id="forgot-form">
+                <div class="form-group"><label>Email</label><input type="email" id="forgot-email" required></div>
+                <button type="submit" class="btn-auth">Enviar Enlace</button>
+            </form>
+            <div style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--primary); cursor: pointer; font-weight: 600;" onclick="toggleForgot(false)">
+                Volver al login
             </div>
         </div>
     </div>
@@ -335,6 +362,15 @@
         window.addEventListener('hashchange', route);
 
         async function init() {
+            // Check if we're coming from a password reset email
+            const hash = window.location.hash;
+            if (hash.includes('type=recovery') || hash.includes('access_token')) {
+                showApp();
+                window.location.hash = '#/reset-password';
+                document.getElementById('loader').style.display = 'none';
+                return;
+            }
+
             const { data: { session } } = await supabaseApp.auth.getSession();
             if (session) {
                 user = session.user;
@@ -374,6 +410,7 @@
         function showApp() { document.getElementById('auth-view').style.display = 'none'; document.getElementById('app-view').style.display = 'flex'; }
 
         function updateUserInfo() {
+            if (!user) return;
             document.getElementById('display-name').innerText = user.email.split('@')[0];
             document.getElementById('display-email').innerText = user.email;
             document.getElementById('avatar-initial').innerText = user.email[0].toUpperCase();
@@ -382,6 +419,8 @@
 
         async function loadDashboard() {
             const { data: albums } = await supabaseApp.from('albums').select('id, last_scanned_at').eq('user_id', user.id);
+            if (!albums) return;
+            
             const { count: mediaCount } = await supabaseApp.from('media').select('*', { count: 'exact', head: true }).in('album_id', albums.map(a => a.id));
             
             document.getElementById('stat-albums').innerText = albums.length;
@@ -508,7 +547,16 @@
             document.getElementById('auth-title').innerText = isSignUp ? 'Registro' : 'NFC Souvenirs';
             document.getElementById('btn-submit').innerText = isSignUp ? 'Registrarme' : 'Entrar';
             document.getElementById('toggle-auth').innerText = isSignUp ? 'Volver al login' : '¿No tienes cuenta? Regístrate';
+            document.getElementById('pass-group').style.display = 'block';
+            document.getElementById('forgot-password-link').style.display = isSignUp ? 'none' : 'block';
         });
+
+        function toggleForgot(show) {
+            document.getElementById('login-form-container').style.display = show ? 'none' : 'block';
+            document.getElementById('forgot-form-container').style.display = show ? 'block' : 'none';
+        }
+
+        document.getElementById('forgot-password-link').addEventListener('click', () => toggleForgot(true));
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -521,6 +569,28 @@
             if (error) alert(error.message);
             else if (isSignUp) alert("Registro exitoso. Revisa tu email para confirmar.");
             else window.location.reload();
+        });
+
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            const { error } = await supabaseApp.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname,
+            });
+            if (error) alert(error.message);
+            else alert("Enlace enviado. Revisa tu bandeja de entrada.");
+        });
+
+        document.getElementById('reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-password').value;
+            const { error } = await supabaseApp.auth.updateUser({ password: newPassword });
+            if (error) alert(error.message);
+            else {
+                alert("Contraseña actualizada con éxito.");
+                window.location.hash = '#/home';
+                window.location.reload();
+            }
         });
 
         window.onload = init;
