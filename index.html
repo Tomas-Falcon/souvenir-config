@@ -324,7 +324,7 @@
         // CONFIG
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseApp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let user = null;
         let currentAlbum = null;
@@ -335,7 +335,7 @@
         window.addEventListener('hashchange', route);
 
         async function init() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseApp.auth.getSession();
             if (session) {
                 user = session.user;
                 updateUserInfo();
@@ -381,8 +381,8 @@
         }
 
         async function loadDashboard() {
-            const { data: albums } = await supabase.from('albums').select('id, last_scanned_at').eq('user_id', user.id);
-            const { count: mediaCount } = await supabase.from('media').select('*', { count: 'exact', head: true }).in('album_id', albums.map(a => a.id));
+            const { data: albums } = await supabaseApp.from('albums').select('id, last_scanned_at').eq('user_id', user.id);
+            const { count: mediaCount } = await supabaseApp.from('media').select('*', { count: 'exact', head: true }).in('album_id', albums.map(a => a.id));
             
             document.getElementById('stat-albums').innerText = albums.length;
             document.getElementById('stat-media').innerText = mediaCount || 0;
@@ -390,7 +390,7 @@
             const scans = albums.filter(a => a.last_scanned_at).length;
             document.getElementById('stat-scans').innerText = scans;
 
-            // Recent activity (dummy for now, or fetch if available)
+            // Recent activity
             const recent = albums.filter(a => a.last_scanned_at).sort((a,b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 5);
             const list = document.getElementById('recent-activity-list');
             if (recent.length > 0) {
@@ -412,7 +412,7 @@
             const container = document.getElementById('albums-container');
             container.innerHTML = '<div class="spinner" style="grid-column: 1/-1; margin: 2rem auto;"></div>';
             
-            const { data: albums, error } = await supabase.from('albums').select('*, categories(name)').eq('user_id', user.id).order('created_at', { ascending: false });
+            const { data: albums, error } = await supabaseApp.from('albums').select('*, categories(name)').eq('user_id', user.id).order('created_at', { ascending: false });
             if (error) { container.innerHTML = '<p>Error al cargar.</p>'; return; }
             
             if (albums.length === 0) {
@@ -440,7 +440,7 @@
 
         async function loadRequests() {
             const container = document.getElementById('requests-container');
-            const { data: requests } = await supabase.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
+            const { data: requests } = await supabaseApp.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
             
             if (!requests || requests.length === 0) {
                 container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem;">No tienes solicitudes pendientes.</p>';
@@ -463,7 +463,7 @@
         }
 
         async function handleRequest(id, status) {
-            await supabase.from('pending_requests').update({ status }).eq('id', id);
+            await supabaseApp.from('pending_requests').update({ status }).eq('id', id);
             loadRequests();
         }
 
@@ -487,20 +487,20 @@
             const isPub = selectedPrivacy === 'public';
             const title = document.getElementById('edit-title').value;
             
-            const { error } = await supabase.from('albums').update({ title, is_private: isPri, is_published: isPub }).eq('id', currentAlbum);
+            const { error } = await supabaseApp.from('albums').update({ title, is_private: isPri, is_published: isPub }).eq('id', currentAlbum);
             if (error) alert(error.message); else { closeModal(); loadAlbums(); }
         }
 
         async function deleteAlbum() {
             if (!confirm('¿Seguro que quieres eliminar este recuerdo? Esta acción es irreversible.')) return;
             // First unlink tags
-            await supabase.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentAlbum);
+            await supabaseApp.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentAlbum);
             // Then delete album
-            const { error } = await supabase.from('albums').delete().eq('id', currentAlbum);
+            const { error } = await supabaseApp.from('albums').delete().eq('id', currentAlbum);
             if (error) alert(error.message); else { closeModal(); loadAlbums(); }
         }
 
-        async function logout() { await supabase.auth.signOut(); window.location.reload(); }
+        async function logout() { await supabaseApp.auth.signOut(); window.location.reload(); }
 
         // Auth Logic
         document.getElementById('toggle-auth').addEventListener('click', () => {
@@ -515,8 +515,8 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const { data, error } = isSignUp 
-                ? await supabase.auth.signUp({ email, password }) 
-                : await supabase.auth.signInWithPassword({ email, password });
+                ? await supabaseApp.auth.signUp({ email, password }) 
+                : await supabaseApp.auth.signInWithPassword({ email, password });
             
             if (error) alert(error.message);
             else if (isSignUp) alert("Registro exitoso. Revisa tu email para confirmar.");
