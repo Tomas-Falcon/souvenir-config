@@ -3,34 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NFC Souvenirs | Tus Recuerdos Inmortales</title>
+    <title>NFC Souvenirs | Tus Recuerdos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Colores base extraídos de _screenDecoration en Flutter */
-            --bg-dark: #0B0F19; /* Slate oscuro premium de fondo real */
-            --bg-light: #F9FAFB;
+            --bg-dark: #0B0F19;
             --primary: #6366f1;
-            --accent: #6366f1;
+            --accent: #a855f7;
             --text-main: #ffffff;
             --text-muted: rgba(255, 255, 255, 0.6);
-            --gradient-start: rgba(99, 102, 241, 0.22); /* Opacidad 0.22 según código Flutter */
+            --gradient-start: rgba(99, 102, 241, 0.15);
             --card-bg: rgba(255, 255, 255, 0.03);
             --radius-md: 16px;
             --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        @media (prefers-color-scheme: light) {
-            :root {
-                --bg-dark: #F9FAFB;
-                --text-main: #111827;
-                --text-muted: rgba(17, 24, 39, 0.6);
-                --gradient-start: rgba(99, 102, 241, 0.06); /* Opacidad 0.06 en modo claro según Flutter */
-                --card-bg: rgba(0, 0, 0, 0.02);
-            }
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
@@ -42,187 +30,51 @@
             min-height: 100vh;
             display: flex; flex-direction: column;
             overflow-x: hidden;
-            background-attachment: fixed;
         }
 
-        /* Gradiente Radial Idéntico a Flutter */
         body::before {
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0; height: 100vh;
             background: radial-gradient(circle at top center, var(--gradient-start) 0%, transparent 80%);
-            z-index: -1;
-            pointer-events: none;
-            transition: background 1s ease;
+            z-index: -1; pointer-events: none;
         }
 
-        header {
-            padding: 3.5rem 1.5rem 2rem;
-            text-align: center;
-            z-index: 100;
-        }
+        header { padding: 3.5rem 1.5rem 2rem; text-align: center; }
+        h1 { font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 6vw, 2.8rem); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 0.5rem; }
+        .subtitle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.25em; text-transform: uppercase; font-weight: 600; }
 
-        h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: clamp(1.8rem, 6vw, 2.8rem);
-            font-weight: 900;
-            letter-spacing: -0.04em;
-            background: linear-gradient(135deg, var(--text-main) 0%, var(--text-muted) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        .subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        /* Grid Adaptativo */
-        .gallery-wrapper {
-            max-width: 1400px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 0 1rem 5rem;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
+        .gallery-wrapper { max-width: 1400px; width: 100%; margin: 0 auto; padding: 0 1rem 5rem; }
+        .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         @media (min-width: 768px) { .gallery { grid-template-columns: repeat(4, 1fr); gap: 20px; } }
-        @media (min-width: 1200px) { .gallery { grid-template-columns: repeat(6, 1fr); gap: 25px; } }
 
         .media-item {
-            position: relative;
-            aspect-ratio: 1/1;
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            cursor: pointer;
-            transition: var(--transition);
-            opacity: 0;
-            transform: translateY(15px);
+            aspect-ratio: 1/1; border-radius: var(--radius-md); overflow: hidden;
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer; transition: var(--transition); opacity: 0; transform: translateY(15px);
         }
-
         .media-item.show { opacity: 1; transform: translateY(0); }
+        .media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; }
 
-        .media-item:hover {
-            transform: scale(1.03);
-            border-color: var(--accent);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        /* --- Protected View --- */
+        #protected-view { display: none; text-align: center; padding: 4rem 2rem; max-width: 400px; margin: 0 auto; }
+        .lock-icon { font-size: 4rem; margin-bottom: 1.5rem; }
+        .btn-request {
+            width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none; border-radius: 12px; color: white; font-family: 'Outfit', sans-serif;
+            font-weight: 700; cursor: pointer; margin-top: 2rem;
         }
 
-        .media-item img, .media-item video {
-            width: 100%; height: 100%;
-            object-fit: cover;
-        }
+        /* --- Viewer --- */
+        #viewer { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .v-content img, .v-content video { max-width: 100%; max-height: 90vh; object-fit: contain; }
+        .v-close { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255,255,255,0.1); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
 
-        .video-badge {
-            position: absolute;
-            top: 10px; right: 10px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(5px);
-            padding: 5px;
-            border-radius: 50%;
-            color: white;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        /* Visor Inmersivo Estilo iOS/Flutter */
-        #viewer {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #000;
-            z-index: 1000;
-            display: none;
-            align-items: center; justify-content: center;
-        }
-
-        #viewer-bg {
-            position: absolute;
-            top: -10%; left: -10%; width: 120%; height: 120%;
-            background-size: cover;
-            background-position: center;
-            filter: blur(60px) brightness(0.3);
-            opacity: 0.7;
-            z-index: -1;
-            transition: background-image 0.5s ease;
-        }
-
-        .v-header {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            padding: 1.5rem;
-            display: flex; justify-content: space-between; align-items: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
-            z-index: 1020;
-            color: white;
-        }
-
-        .v-close {
-            background: rgba(255,255,255,0.15);
-            border: none; color: white;
-            width: 40px; height: 40px;
-            border-radius: 50%; cursor: pointer;
-            backdrop-filter: blur(10px);
-        }
-
-        .v-content {
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1010;
-        }
-
-        .v-content img, .v-content video {
-            max-width: 100%; max-height: 90vh;
-            object-fit: contain;
-            box-shadow: 0 30px 70px rgba(0,0,0,0.9);
-            animation: emerge 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes emerge { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-
-        .v-nav {
-            position: absolute;
-            width: 100%; display: flex; justify-content: space-between;
-            padding: 0 1rem; pointer-events: none; z-index: 1020;
-        }
-
-        .v-btn {
-            width: 50px; height: 50px; border-radius: 50%;
-            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1);
-            color: white; cursor: pointer; pointer-events: auto;
-            display: flex; align-items: center; justify-content: center;
-            backdrop-filter: blur(15px);
-        }
-
-        .v-info {
-            position: absolute; bottom: 2rem;
-            left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.5); padding: 8px 18px;
-            border-radius: 20px; font-size: 0.8rem; color: white;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .loader {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
+        .loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
     </style>
 </head>
-<body id="body">
+<body>
 
     <header>
         <h1 id="albumTitle">NFC Souvenirs</h1>
@@ -231,56 +83,58 @@
 
     <main class="gallery-wrapper">
         <div id="loader" class="loader"></div>
+        
+        <!-- Gallery View -->
         <div id="gallery" class="gallery"></div>
+
+        <!-- Protected View -->
+        <div id="protected-view">
+            <div class="lock-icon">🛡️</div>
+            <h3>Recuerdo Protegido</h3>
+            <p style="color:var(--text-muted); margin-top:1rem;">Este álbum es privado. Solicita acceso al dueño para ver el contenido.</p>
+            <button class="btn-request" id="btn-request" onclick="requestAccess()">Solicitar Acceso</button>
+            <div id="request-status" style="margin-top:1.5rem; font-weight:600; display:none;">Solicitud enviada. Espera aprobación.</div>
+        </div>
     </main>
 
     <div id="viewer">
-        <div id="viewer-bg"></div>
-        <div class="v-header">
-            <span style="font-weight: 600; opacity: 0.7;">RECUERDO</span>
-            <button class="v-close" onclick="closeViewer()">✕</button>
-        </div>
-        <div class="v-nav">
-            <button class="v-btn" onclick="nav(-1)">❮</button>
-            <button class="v-btn" onclick="nav(1)">❯</button>
-        </div>
+        <button class="v-close" onclick="closeViewer()">✕</button>
         <div class="v-content" id="v-content"></div>
-        <div class="v-info" id="v-info"></div>
     </div>
 
     <script>
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let mediaItems = [];
-        let cur = 0;
-        let startX = 0;
+        let albumId = null;
 
         async function init() {
             const uuid = window.location.pathname.split('/').pop();
             if (!uuid || uuid.length < 30) return;
 
             try {
-                const { data: tag } = await supabaseClient
-                    .from('tags')
-                    .select('album_id, albums(title, use_category_style, categories(style_json), media(url, type, order_index))')
-                    .eq('uuid', uuid).single();
-
-                if (!tag || !tag.albums) return;
-
-                const album = tag.albums;
-                document.getElementById('albumTitle').innerText = album.title;
-
-                if (album.use_category_style && album.categories?.style_json) {
-                    const s = album.categories.style_json;
-                    document.documentElement.style.setProperty('--gradient-start', s.gradientStart + '38');
-                    document.documentElement.style.setProperty('--primary', s.accentColor || s.gradientStart);
-                    document.documentElement.style.setProperty('--accent', s.accentColor || s.gradientStart);
+                // 1. Fetch tag to get album_id (Tags are public)
+                const { data: tag } = await supabase.from('tags').select('album_id').eq('uuid', uuid).single();
+                if (!tag || !tag.album_id) {
+                    document.getElementById('albumTitle').innerText = "Vacio";
+                    document.getElementById('albumSubtitle').innerText = "Este souvenir no tiene contenido aún.";
+                    return;
                 }
+                albumId = tag.album_id;
 
-                mediaItems = (album.media || []).sort((a,b) => a.order_index - b.order_index);
-                render();
+                // 2. Try to fetch album and media (May fail if protected/private)
+                const { data: album } = await supabase.from('albums').select('title, is_published, media(url, type, order_index)').eq('id', albumId).single();
+
+                if (album) {
+                    document.getElementById('albumTitle').innerText = album.title;
+                    mediaItems = (album.media || []).sort((a,b) => a.order_index - b.order_index);
+                    render();
+                } else {
+                    // Album exists but hidden by RLS -> Protected
+                    showProtected();
+                }
             } catch (e) {
                 console.error(e);
             } finally {
@@ -294,17 +148,13 @@
                 const el = document.createElement('div');
                 el.className = 'media-item';
                 el.style.transitionDelay = `${i * 0.04}s`;
-                el.onclick = () => open(i);
+                el.onclick = () => openViewer(i);
 
                 if (item.type === 'video') {
                     const v = document.createElement('video');
                     v.src = item.url + "#t=0.5";
                     v.muted = true; v.playsInline = true;
                     el.appendChild(v);
-                    const b = document.createElement('div');
-                    b.className = 'video-badge';
-                    b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
-                    el.appendChild(b);
                 } else {
                     const img = document.createElement('img');
                     img.src = item.url; img.loading = "lazy";
@@ -315,56 +165,50 @@
             });
         }
 
-        function open(i) {
-            cur = i;
-            update();
-            document.getElementById('viewer').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
+        function showProtected() {
+            document.getElementById('gallery').style.display = 'none';
+            document.getElementById('protected-view').style.display = 'block';
         }
 
-        function update() {
-            const item = mediaItems[cur];
+        async function requestAccess() {
+            const btn = document.getElementById('btn-request');
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+            
+            // In a real app, we might ask for user's name/email. 
+            // Here we just insert a record if the table exists.
+            const { error } = await supabase.from('pending_requests').insert({ album_id: albumId, status: 'pending' });
+            
+            if (error) {
+                alert("Error al enviar solicitud: " + error.message);
+                btn.disabled = false;
+                btn.innerText = "Solicitar Acceso";
+            } else {
+                btn.style.display = 'none';
+                document.getElementById('request-status').style.display = 'block';
+            }
+        }
+
+        function openViewer(i) {
+            const item = mediaItems[i];
             const c = document.getElementById('v-content');
-            const bg = document.getElementById('viewer-bg');
-            const inf = document.getElementById('v-info');
             c.innerHTML = '';
-            inf.innerText = `${cur + 1} / ${mediaItems.length}`;
             if (item.type === 'video') {
                 const v = document.createElement('video');
                 v.src = item.url; v.controls = true; v.autoplay = true;
                 c.appendChild(v);
-                bg.style.backgroundImage = 'none';
             } else {
                 const img = document.createElement('img');
                 img.src = item.url;
                 c.appendChild(img);
-                bg.style.backgroundImage = `url(${item.url})`;
             }
-        }
-
-        function nav(d) {
-            cur = (cur + d + mediaItems.length) % mediaItems.length;
-            update();
+            document.getElementById('viewer').style.display = 'flex';
         }
 
         function closeViewer() {
             document.getElementById('viewer').style.display = 'none';
             document.getElementById('v-content').innerHTML = '';
-            document.body.style.overflow = 'auto';
         }
-
-        window.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeViewer();
-            if (e.key === 'ArrowRight') nav(1);
-            if (e.key === 'ArrowLeft') nav(-1);
-        });
-
-        const v = document.getElementById('viewer');
-        v.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-        v.addEventListener('touchend', e => {
-            const diff = startX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 50) nav(diff > 0 ? 1 : -1);
-        });
 
         window.onload = init;
     </script>

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NFC Souvenirs | Gestiona tus Recuerdos</title>
-    <!-- Script de Supabase con integridad y carga explícita -->
+    <title>NFC Souvenirs | Dashboard</title>
+    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +18,7 @@
             --text-muted: rgba(255, 255, 255, 0.6);
             --glass: rgba(255, 255, 255, 0.05);
             --card-bg: rgba(255, 255, 255, 0.03);
+            --sidebar-width: 260px;
             --radius-lg: 24px;
             --radius-md: 16px;
             --transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -33,7 +34,7 @@
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            display: flex; flex-direction: column;
+            display: flex;
             overflow-x: hidden;
         }
 
@@ -41,12 +42,12 @@
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0; height: 100vh;
-            background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 80%);
+            background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 80%);
             z-index: -1; pointer-events: none;
         }
 
         /* --- Auth View --- */
-        #auth-view { flex: 1; display: none; align-items: center; justify-content: center; padding: 2rem; }
+        #auth-view { position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 2rem; }
         .auth-card {
             background: var(--glass); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius-lg); padding: 3rem 2rem; width: 100%; max-width: 400px; text-align: center;
@@ -55,8 +56,9 @@
         .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted); text-transform: uppercase; }
         .form-group input {
             width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; padding: 0.8rem 1rem; color: white; font-family: inherit;
+            border-radius: 12px; padding: 0.8rem 1rem; color: white; font-family: inherit; outline: none; transition: border 0.3s;
         }
+        .form-group input:focus { border-color: var(--primary); }
         .btn-auth {
             width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--primary), var(--accent));
             border: none; border-radius: 12px; color: white; font-family: 'Outfit', sans-serif;
@@ -64,253 +66,462 @@
         }
         .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2); }
 
-        /* --- App View --- */
-        #app-view { flex: 1; display: none; flex-direction: column; }
-        nav {
-            padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
-            backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.05);
+        /* --- Sidebar --- */
+        aside {
+            width: var(--sidebar-width);
+            background: rgba(11, 13, 21, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex; flex-direction: column;
+            padding: 2rem 1.5rem;
+            height: 100vh; position: sticky; top: 0;
+            z-index: 100;
+            transition: transform 0.3s ease;
         }
-        .nav-logo { display: flex; align-items: center; gap: 0.8rem; font-family: 'Outfit', sans-serif; font-weight: 800; }
-        .nav-logo div { width: 32px; height: 32px; background: var(--primary); border-radius: 8px; }
 
-        .btn-logout { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; }
+        .nav-logo { display: flex; align-items: center; gap: 0.8rem; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.2rem; margin-bottom: 3rem; }
+        .nav-logo .logo-box { width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 8px; }
 
-        .content { max-width: 1200px; width: 100%; margin: 0 auto; padding: 2rem; }
-        
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
-        .dashboard-header h2 { font-family: 'Outfit', sans-serif; font-size: 2.5rem; letter-spacing: -0.04em; }
-
-        .requests-panel {
-            background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);
-            border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; display: none;
+        .nav-links { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 1rem; padding: 0.8rem 1rem;
+            border-radius: 12px; color: var(--text-muted); text-decoration: none;
+            transition: var(--transition); cursor: pointer;
         }
-        .request-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid rgba(245, 158, 11, 0.1); }
+        .nav-item:hover { background: rgba(255, 255, 255, 0.05); color: white; }
+        .nav-item.active { background: rgba(99, 102, 241, 0.1); color: var(--primary); border: 1px solid rgba(99, 102, 241, 0.2); }
+        .nav-item svg { width: 20px; height: 20px; }
 
-        .albums-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
-        
+        .user-info { margin-top: auto; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+        .user-badge { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; }
+        .user-avatar { width: 40px; height: 40px; background: var(--glass); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-details { overflow: hidden; }
+        .user-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .user-email { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+
+        /* --- Main Content --- */
+        #app-view { flex: 1; display: none; flex-direction: column; min-width: 0; }
+        main { flex: 1; padding: 2rem 3rem; max-width: 1400px; width: 100%; margin: 0 auto; }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
+        header h1 { font-family: 'Outfit', sans-serif; font-size: 2.2rem; letter-spacing: -0.04em; }
+
+        /* --- Views --- */
+        .view { display: none; animation: fadeIn 0.4s ease-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Dashboard View --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+        .stat-card {
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem; border-radius: var(--radius-md);
+        }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+        .stat-value { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; }
+
+        .recent-activity { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: var(--radius-md); padding: 1.5rem; }
+        .activity-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+        .activity-item:last-child { border: none; }
+        .activity-icon { width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+
+        /* --- Albums View --- */
+        .albums-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
         .album-card {
-            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: var(--radius-md); overflow: hidden; transition: var(--transition);
-            display: flex; flex-direction: column; cursor: pointer;
+            cursor: pointer; position: relative;
         }
-        .album-card:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); }
+        .album-card:hover { transform: translateY(-5px); border-color: var(--primary); background: rgba(255, 255, 255, 0.05); }
+        .album-img { width: 100%; aspect-ratio: 16/9; background: #1a1c23; object-fit: cover; }
+        .album-info { padding: 1.2rem; }
+        .album-title { font-weight: 600; margin-bottom: 0.4rem; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .album-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .status-public { background: rgba(34, 197, 94, 0.1); color: var(--success); }
+        .status-protected { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .status-private { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); }
 
-        .album-cover { width: 100%; aspect-ratio: 16/9; background: #1a1c23; position: relative; }
-        .album-cover img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .album-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
-        .icon-btn {
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
-            color: white; width: 36px; height: 32px; border-radius: 8px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .album-info { padding: 1.5rem; }
-        .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .status-public { background: rgba(34, 197, 94, 0.1); color: var(--success); border: 1px solid var(--success); }
-        .status-protected { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid var(--warning); }
-        .status-private { background: rgba(255, 255, 255, 0.1); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.2); }
-
+        /* --- Modal --- */
         .modal {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
             z-index: 1000; display: none; align-items: center; justify-content: center; padding: 1.5rem;
         }
         .modal-content {
             background: #11131a; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 500px;
+            border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 550px;
+            max-height: 90vh; overflow-y: auto;
         }
-        
-        .privacy-option {
-            display: flex; align-items: flex-start; gap: 1rem; padding: 1rem; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; margin-bottom: 1rem; cursor: pointer;
-        }
-        .privacy-option.selected { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
 
-        .loader-full { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        /* --- Mobile Toggle --- */
+        .mobile-header { display: none; padding: 1rem 1.5rem; background: rgba(11, 13, 21, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 150; border-bottom: 1px solid rgba(255, 255, 255, 0.05); justify-content: space-between; align-items: center; }
+        .menu-btn { background: none; border: none; color: white; cursor: pointer; }
+
+        @media (max-width: 768px) {
+            aside { position: fixed; transform: translateX(-100%); height: 100vh; }
+            aside.open { transform: translateX(0); }
+            .mobile-header { display: flex; }
+            main { padding: 1.5rem; }
+            header h1 { font-size: 1.8rem; }
+        }
+
+        /* Utils */
+        .loader-full { position: fixed; inset: 0; background: var(--bg-dark); z-index: 3000; display: flex; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        .upload-zone {
-            border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem;
-            text-align: center; margin-top: 1rem; cursor: pointer;
-        }
     </style>
 </head>
 <body>
 
     <div id="loader" class="loader-full"><div class="spinner"></div></div>
 
+    <!-- Mobile Top Bar -->
+    <div class="mobile-header">
+        <div class="nav-logo" style="margin-bottom:0"><div class="logo-box"></div><span>Souvenirs</span></div>
+        <button class="menu-btn" onclick="toggleSidebar()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+        <div class="nav-logo">
+            <div class="logo-box"></div>
+            <span>NFC Souvenirs</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#/home" class="nav-item" id="nav-home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Inicio
+            </a>
+            <a href="#/albums" class="nav-item" id="nav-albums">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                Mis Recuerdos
+            </a>
+            <a href="#/requests" class="nav-item" id="nav-requests">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Solicitudes
+            </a>
+            <a href="#/settings" class="nav-item" id="nav-settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Ajustes
+            </a>
+        </nav>
+        <div class="user-info">
+            <div class="user-badge">
+                <div class="user-avatar" id="avatar-initial">U</div>
+                <div class="user-details">
+                    <div class="user-name" id="display-name">Usuario</div>
+                    <div class="user-email" id="display-email">email@example.com</div>
+                </div>
+            </div>
+            <button class="nav-item" style="width:100%; border:none; background:none;" onclick="logout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main View -->
+    <div id="app-view">
+        <main>
+            <!-- Dashboard -->
+            <section id="view-home" class="view">
+                <header>
+                    <div>
+                        <h1 id="welcome-msg">Hola, Bienvenid@</h1>
+                        <p style="color:var(--text-muted)">Aquí tienes un resumen de tus recuerdos.</p>
+                    </div>
+                </header>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-label">Álbumes Activos</div><div class="stat-value" id="stat-albums">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Total Escaneos</div><div class="stat-value" id="stat-scans">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Media Guardada</div><div class="stat-value" id="stat-media">0</div></div>
+                </div>
+                <h3>Actividad Reciente</h3>
+                <div id="recent-activity-list" class="recent-activity" style="margin-top:1.5rem;">
+                    <p style="color:var(--text-muted); text-align:center;">No hay actividad reciente.</p>
+                </div>
+            </section>
+
+            <!-- My Albums -->
+            <section id="view-albums" class="view">
+                <header>
+                    <div><h1>Mis Recuerdos</h1><p style="color:var(--text-muted)">Administra tus imanes físicos.</p></div>
+                    <button class="btn-auth" style="width:auto; padding: 0.8rem 1.5rem;" onclick="alert('Usa la App móvil para vincular nuevos imanes vía NFC')">Vincular Nuevo</button>
+                </header>
+                <div id="albums-container" class="albums-grid"></div>
+            </section>
+
+            <!-- Requests -->
+            <section id="view-requests" class="view">
+                <header><div><h1>Solicitudes</h1><p style="color:var(--text-muted)">Gestiona quién puede ver tus álbumes protegidos.</p></div></header>
+                <div id="requests-container" class="recent-activity">
+                    <p style="color:var(--text-muted); text-align:center; padding:2rem;">No tienes solicitudes pendientes.</p>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section id="view-settings" class="view">
+                <header><div><h1>Ajustes</h1><p style="color:var(--text-muted)">Configura tu experiencia.</p></div></header>
+                <div class="recent-activity">
+                    <div class="form-group" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:1.5rem;">
+                        <label>Idioma</label>
+                        <select style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:0.8rem; color:white;">
+                            <option>Español</option>
+                            <option>English</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-top:1.5rem;">
+                        <label>Tema</label>
+                        <p style="font-size:0.9rem; color:var(--text-muted)">Oscuro (Premium) por defecto.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
     <!-- Auth View -->
     <div id="auth-view">
         <div class="auth-card">
-            <h2 id="auth-title">Bienvenido</h2>
-            <p id="auth-desc" style="margin-bottom: 2rem;">Gestiona tus recuerdos físicos.</p>
+            <h2 id="auth-title">NFC Souvenirs</h2>
+            <p id="auth-desc" style="margin-bottom: 2rem; color:var(--text-muted)">Inicia sesión para gestionar tus recuerdos.</p>
             <form id="auth-form">
                 <div class="form-group"><label>Email</label><input type="email" id="email" required></div>
                 <div class="form-group"><label>Contraseña</label><input type="password" id="password" required></div>
                 <button type="submit" class="btn-auth" id="btn-submit">Entrar</button>
             </form>
-            <div class="auth-toggle" style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
-                <span id="toggle-text" style="color: var(--primary); cursor: pointer; font-weight: 600;">¿No tienes cuenta? Regístrate</span>
+            <div style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                <span id="toggle-auth" style="color: var(--primary); cursor: pointer; font-weight: 600;">¿No tienes cuenta? Regístrate</span>
             </div>
         </div>
-    </div>
-
-    <!-- Main App View -->
-    <div id="app-view">
-        <nav>
-            <div class="nav-logo"><div></div><span>NFC Souvenirs</span></div>
-            <div class="user-actions"><button class="btn-logout" id="logout-btn">Cerrar Sesión</button></div>
-        </nav>
-
-        <main class="content">
-            <div id="requests-panel" class="requests-panel">
-                <h4 style="color: var(--warning); margin-bottom: 1rem;">🔔 Solicitudes de Acceso</h4>
-                <div id="requests-list"></div>
-            </div>
-            <div class="dashboard-header">
-                <div><h2>Mis Recuerdos</h2><p style="color: var(--text-muted);">Administra tus imanes y privacidad</p></div>
-                <button class="btn-auth" style="width: auto; padding: 0.8rem 1.5rem;" onclick="alert('Usa la App móvil para vincular nuevos imanes vía NFC')">Vincular Nuevo</button>
-            </div>
-            <div id="albums-container" class="albums-grid"></div>
-        </main>
     </div>
 
     <!-- Edit Modal -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                <h3>Ajustes del Álbum</h3>
+                <h3 id="modal-title">Ajustes del Álbum</h3>
                 <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <div class="form-group"><label>Nombre del Álbum</label><input type="text" id="edit-title"></div>
-            <div style="margin-top: 1.5rem;">
-                <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem;">PRIVACIDAD</label>
-                <div class="privacy-option" onclick="setPrivacy(true, false)" id="opt-private"><div>🔒</div><div><h4>Privado</h4><p>Solo tú puedes verlo.</p></div></div>
-                <div class="privacy-option" onclick="setPrivacy(false, false)" id="opt-protected"><div>🛡️</div><div><h4>Protegido</h4><p>Requiere aprobación.</p></div></div>
-                <div class="privacy-option" onclick="setPrivacy(false, true)" id="opt-public"><div>🌍</div><div><h4>Público</h4><p>Acceso directo.</p></div></div>
+            
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase;">Privacidad</label>
+            <div id="privacy-options" style="display:flex; flex-direction:column; gap:0.8rem; margin-bottom:1.5rem;">
+                <div class="nav-item" onclick="setPrivacy('private')" id="p-private" style="border:1px solid rgba(255,255,255,0.1)">🔒 Privado</div>
+                <div class="nav-item" onclick="setPrivacy('protected')" id="p-protected" style="border:1px solid rgba(255,255,255,0.1)">🛡️ Protegido (Con Solicitud)</div>
+                <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)">🌍 Público</div>
             </div>
-            <div class="upload-zone" onclick="document.getElementById('file-input').click()">📸 Subir Fotos o Video<input type="file" id="file-input" style="display:none" multiple onchange="handleUpload(this)"></div>
-            <div style="display:flex; gap:10px; margin-top:2rem;">
-                <button class="btn-logout" style="flex:1" onclick="deleteAlbum()">Eliminar</button>
-                <button class="btn-auth" style="flex:2" onclick="saveSettings()">Guardar</button>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="deleteAlbum()">Eliminar</button>
+                <button class="btn-auth" onclick="saveAlbumSettings()">Guardar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Versión: 2.0.1 (Cache-Bust)
+        // CONFIG
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
-        
-        // Uso de window.supabase para evitar cualquier ambigüedad de declaración
-        const clientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentEditingAlbum = null;
-        let selectedPrivacy = { isPrivate: false, isPublished: false };
+        let user = null;
+        let currentAlbum = null;
         let isSignUp = false;
+        let selectedPrivacy = 'protected';
+
+        // ROUTING
+        window.addEventListener('hashchange', route);
 
         async function init() {
-            try {
-                const { data: { session } } = await clientInstance.auth.getSession();
-                if (session) showApp(); else showAuth();
-            } catch (e) { console.error("Error init:", e); }
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                user = session.user;
+                updateUserInfo();
+                showApp();
+                route();
+            } else {
+                showAuth();
+            }
             document.getElementById('loader').style.display = 'none';
         }
 
+        function route() {
+            const hash = window.location.hash || '#/home';
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
+            
+            const viewId = 'view-' + hash.replace('#/', '');
+            const view = document.getElementById(viewId);
+            if (view) view.classList.add('active');
+            
+            const navId = 'nav-' + hash.replace('#/', '');
+            const nav = document.getElementById(navId);
+            if (nav) nav.classList.add('active');
+
+            // Load data based on view
+            if (hash === '#/home') loadDashboard();
+            if (hash === '#/albums') loadAlbums();
+            if (hash === '#/requests') loadRequests();
+
+            // Mobile: close sidebar on route
+            document.getElementById('sidebar').classList.remove('open');
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         function showAuth() { document.getElementById('auth-view').style.display = 'flex'; document.getElementById('app-view').style.display = 'none'; }
-        function showApp() { document.getElementById('app-view').style.display = 'flex'; document.getElementById('auth-view').style.display = 'none'; loadAlbums(); loadRequests(); }
+        function showApp() { document.getElementById('auth-view').style.display = 'none'; document.getElementById('app-view').style.display = 'flex'; }
+
+        function updateUserInfo() {
+            document.getElementById('display-name').innerText = user.email.split('@')[0];
+            document.getElementById('display-email').innerText = user.email;
+            document.getElementById('avatar-initial').innerText = user.email[0].toUpperCase();
+            document.getElementById('welcome-msg').innerText = `Hola, ${user.email.split('@')[0]}`;
+        }
+
+        async function loadDashboard() {
+            const { data: albums } = await supabase.from('albums').select('id, last_scanned_at').eq('user_id', user.id);
+            const { count: mediaCount } = await supabase.from('media').select('*', { count: 'exact', head: true }).in('album_id', albums.map(a => a.id));
+            
+            document.getElementById('stat-albums').innerText = albums.length;
+            document.getElementById('stat-media').innerText = mediaCount || 0;
+            
+            const scans = albums.filter(a => a.last_scanned_at).length;
+            document.getElementById('stat-scans').innerText = scans;
+
+            // Recent activity (dummy for now, or fetch if available)
+            const recent = albums.filter(a => a.last_scanned_at).sort((a,b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 5);
+            const list = document.getElementById('recent-activity-list');
+            if (recent.length > 0) {
+                list.innerHTML = recent.map(a => `
+                    <div class="activity-item">
+                        <div class="activity-icon">📍</div>
+                        <div>
+                            <div style="font-size:0.9rem; font-weight:600;">Escaneo detectado</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted)">${new Date(a.last_scanned_at).toLocaleString()}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No hay escaneos recientes.</p>';
+            }
+        }
 
         async function loadAlbums() {
             const container = document.getElementById('albums-container');
-            container.innerHTML = '<p>Cargando recuerdos...</p>';
-            const { data: albums, error } = await clientInstance.from('albums').select('*, categories(name)').order('created_at', { ascending: false });
-            if (error) { container.innerHTML = '<p>Error al cargar álbumes.</p>'; return; }
-            container.innerHTML = '';
-            albums?.forEach(album => {
-                const isPub = album.is_published; const isPri = album.is_private;
+            container.innerHTML = '<div class="spinner" style="grid-column: 1/-1; margin: 2rem auto;"></div>';
+            
+            const { data: albums, error } = await supabase.from('albums').select('*, categories(name)').eq('user_id', user.id).order('created_at', { ascending: false });
+            if (error) { container.innerHTML = '<p>Error al cargar.</p>'; return; }
+            
+            if (albums.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:var(--text-muted); padding: 3rem;">No tienes álbumes vinculados. Usa la app móvil para empezar.</p>';
+                return;
+            }
+
+            container.innerHTML = albums.map(a => {
                 let sClass = 'status-protected'; let sText = 'Protegido';
-                if (isPri) { sClass = 'status-private'; sText = 'Privado'; } else if (isPub) { sClass = 'status-public'; sText = 'Público'; }
-                const card = document.createElement('div');
-                card.className = 'album-card';
-                card.innerHTML = `
-                    <div class="album-cover" onclick="window.location.href='m/${album.id}'">
-                        ${album.cover_url ? `<img src="${album.cover_url}">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;opacity:0.2;">🖼️ Sin Portada</div>'}
-                        <div class="album-actions"><button class="icon-btn" onclick="event.stopPropagation(); openEdit('${album.id}', '${album.title}', ${isPri}, ${isPub})">⚙️</button></div>
+                if (a.is_private) { sClass = 'status-private'; sText = 'Privado'; } else if (a.is_published) { sClass = 'status-public'; sText = 'Público'; }
+                return `
+                    <div class="album-card" onclick="openAlbumEditor('${a.id}', '${a.title}', ${a.is_private}, ${a.is_published})">
+                        <img src="${a.cover_url || 'https://via.placeholder.com/400x225/11131a/ffffff?text=Sin+Portada'}" class="album-img">
+                        <div class="album-info">
+                            <div class="album-title">${a.title}</div>
+                            <div class="album-meta">
+                                <span style="color:var(--text-muted)">${a.categories?.name || 'Recuerdo'}</span>
+                                <span class="status-pill ${sClass}">${sText}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="album-info"><h3>${album.title}</h3><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;"><span style="font-size:0.8rem;color:var(--text-muted)">${album.categories?.name || 'Recuerdo'}</span><span class="status-pill ${sClass}">${sText}</span></div></div>
                 `;
-                container.appendChild(card);
-            });
+            }).join('');
         }
 
         async function loadRequests() {
-            const { data: requests } = await clientInstance.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
-            const panel = document.getElementById('requests-panel');
-            if (requests?.length > 0) {
-                panel.style.display = 'block';
-                document.getElementById('requests-list').innerHTML = requests.map(r => `
-                    <div class="request-item"><span>Acceso solicitado a <b>${r.albums.title}</b></span>
-                    <div><button onclick="handleReq('${r.id}', 'approved')" style="color:var(--success);background:none;border:none;cursor:pointer;margin-right:10px;">Aceptar</button>
-                    <button onclick="handleReq('${r.id}', 'rejected')" style="color:var(--danger);background:none;border:none;cursor:pointer;">X</button></div></div>
-                `).join('');
-            } else panel.style.display = 'none';
+            const container = document.getElementById('requests-container');
+            const { data: requests } = await supabase.from('pending_requests').select('*, albums(title)').eq('status', 'pending');
+            
+            if (!requests || requests.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:2rem;">No tienes solicitudes pendientes.</p>';
+                return;
+            }
+
+            container.innerHTML = requests.map(r => `
+                <div class="activity-item" style="padding: 1rem 1.5rem;">
+                    <div class="activity-icon">👤</div>
+                    <div style="flex:1">
+                        <div style="font-weight:600;">Solicitud de Acceso</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted)">Para el álbum: <b>${r.albums.title}</b></div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="nav-item" style="color:var(--success); border:1px solid var(--success); padding: 5px 15px;" onclick="handleRequest('${r.id}', 'approved')">Aceptar</button>
+                        <button class="nav-item" style="color:var(--danger); border:1px solid var(--danger); padding: 5px 15px;" onclick="handleRequest('${r.id}', 'rejected')">Rechazar</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        async function handleReq(id, status) { await clientInstance.from('pending_requests').update({ status }).eq('id', id); loadRequests(); }
+        async function handleRequest(id, status) {
+            await supabase.from('pending_requests').update({ status }).eq('id', id);
+            loadRequests();
+        }
 
-        function openEdit(id, title, isPri, isPub) { currentEditingAlbum = id; document.getElementById('edit-title').value = title; setPrivacy(isPri, isPub); document.getElementById('edit-modal').style.display = 'flex'; }
+        function openAlbumEditor(id, title, isPri, isPub) {
+            currentAlbum = id;
+            document.getElementById('edit-title').value = title;
+            setPrivacy(isPri ? 'private' : (isPub ? 'public' : 'protected'));
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
-        function setPrivacy(isPri, isPub) {
-            selectedPrivacy = { isPrivate: isPri, isPublished: isPub };
-            document.querySelectorAll('.privacy-option').forEach(el => el.classList.remove('selected'));
-            if (isPri) document.getElementById('opt-private').classList.add('selected');
-            else if (isPub) document.getElementById('opt-public').classList.add('selected');
-            else document.getElementById('opt-protected').classList.add('selected');
+        function setPrivacy(p) {
+            selectedPrivacy = p;
+            document.querySelectorAll('#privacy-options .nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('p-' + p).classList.add('active');
         }
 
-        async function saveSettings() {
-            const { error } = await clientInstance.from('albums').update({ title: document.getElementById('edit-title').value, is_private: selectedPrivacy.isPrivate, is_published: selectedPrivacy.isPublished }).eq('id', currentEditingAlbum);
+        async function saveAlbumSettings() {
+            const isPri = selectedPrivacy === 'private';
+            const isPub = selectedPrivacy === 'public';
+            const title = document.getElementById('edit-title').value;
+            
+            const { error } = await supabase.from('albums').update({ title, is_private: isPri, is_published: isPub }).eq('id', currentAlbum);
             if (error) alert(error.message); else { closeModal(); loadAlbums(); }
         }
 
-        async function handleUpload(input) {
-            if (!input.files.length) return;
-            document.getElementById('loader').style.display = 'flex';
-            for (const file of input.files) {
-                const path = `${currentEditingAlbum}/${Date.now()}_${file.name}`;
-                await clientInstance.storage.from('souvenir-media').upload(path, file);
-                const { data: { publicUrl } } = clientInstance.storage.from('souvenir-media').getPublicUrl(path);
-                await clientInstance.from('media').insert({ album_id: currentEditingAlbum, type: file.type.includes('video') ? 'video' : 'image', url: publicUrl });
-            }
-            document.getElementById('loader').style.display = 'none'; loadAlbums();
+        async function deleteAlbum() {
+            if (!confirm('¿Seguro que quieres eliminar este recuerdo? Esta acción es irreversible.')) return;
+            // First unlink tags
+            await supabase.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentAlbum);
+            // Then delete album
+            const { error } = await supabase.from('albums').delete().eq('id', currentAlbum);
+            if (error) alert(error.message); else { closeModal(); loadAlbums(); }
         }
 
-        async function deleteAlbum() {
-            if (!confirm('¿Borrar álbum permanentemente?')) return;
-            await clientInstance.from('tags').update({ status: 'unassigned', album_id: null }).eq('album_id', currentEditingAlbum);
-            await clientInstance.from('albums').delete().eq('id', currentEditingAlbum);
-            closeModal(); loadAlbums();
-        }
+        async function logout() { await supabase.auth.signOut(); window.location.reload(); }
+
+        // Auth Logic
+        document.getElementById('toggle-auth').addEventListener('click', () => {
+            isSignUp = !isSignUp;
+            document.getElementById('auth-title').innerText = isSignUp ? 'Registro' : 'NFC Souvenirs';
+            document.getElementById('btn-submit').innerText = isSignUp ? 'Registrarme' : 'Entrar';
+            document.getElementById('toggle-auth').innerText = isSignUp ? 'Volver al login' : '¿No tienes cuenta? Regístrate';
+        });
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const { error } = isSignUp ? await clientInstance.auth.signUp({ email, password }) : await clientInstance.auth.signInWithPassword({ email, password });
-            if (error) alert(error.message); else if (isSignUp) alert("Confirma tu email."); else window.location.reload();
+            const { data, error } = isSignUp 
+                ? await supabase.auth.signUp({ email, password }) 
+                : await supabase.auth.signInWithPassword({ email, password });
+            
+            if (error) alert(error.message);
+            else if (isSignUp) alert("Registro exitoso. Revisa tu email para confirmar.");
+            else window.location.reload();
         });
-
-        document.getElementById('toggle-text').addEventListener('click', () => {
-            isSignUp = !isSignUp;
-            document.getElementById('auth-title').innerText = isSignUp ? 'Registro' : 'Bienvenido';
-            document.getElementById('btn-submit').innerText = isSignUp ? 'Registrarme' : 'Entrar';
-            document.getElementById('toggle-text').innerText = isSignUp ? 'Volver al login' : '¿No tienes cuenta? Regístrate';
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', async () => { await clientInstance.auth.signOut(); window.location.reload(); });
 
         window.onload = init;
     </script>
