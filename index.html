@@ -362,23 +362,47 @@
         window.addEventListener('hashchange', route);
 
         async function init() {
-            // Check if we're coming from a password reset email
+            // Escuchar cambios de estado (especialmente para recuperación de contraseña)
+            supabaseApp.auth.onAuthStateChange((event, session) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    showApp();
+                    window.location.hash = '#/reset-password';
+                    document.getElementById('loader').style.display = 'none';
+                    return;
+                }
+                
+                if (event === 'SIGNED_IN' && session) {
+                    user = session.user;
+                    updateUserInfo();
+                    showApp();
+                    // Si no hay ruta específica, ir a home
+                    if (!window.location.hash || window.location.hash === '#/') {
+                        window.location.hash = '#/home';
+                    }
+                    route();
+                }
+
+                if (event === 'SIGNED_OUT') {
+                    showAuth();
+                }
+            });
+
+            // Verificación manual inicial por si el evento no dispara a tiempo
             const hash = window.location.hash;
             if (hash.includes('type=recovery') || hash.includes('access_token')) {
+                // Dejamos que onAuthStateChange maneje la sesión, pero forzamos la vista
                 showApp();
                 window.location.hash = '#/reset-password';
-                document.getElementById('loader').style.display = 'none';
-                return;
-            }
-
-            const { data: { session } } = await supabaseApp.auth.getSession();
-            if (session) {
-                user = session.user;
-                updateUserInfo();
-                showApp();
-                route();
             } else {
-                showAuth();
+                const { data: { session } } = await supabaseApp.auth.getSession();
+                if (session) {
+                    user = session.user;
+                    updateUserInfo();
+                    showApp();
+                    route();
+                } else {
+                    showAuth();
+                }
             }
             document.getElementById('loader').style.display = 'none';
         }
