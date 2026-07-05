@@ -150,8 +150,28 @@
         .modal-content {
             background: #11131a; border: 1px solid rgba(255,255,255,0.1);
             border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 550px;
-            max-height: 90vh; overflow-y: auto;
+            max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column;
         }
+
+        /* --- Modal Tabs --- */
+        .modal-tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
+        .modal-tab { color: var(--text-muted); cursor: pointer; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 2px solid transparent; transition: var(--transition); }
+        .modal-tab.active { color: white; border-color: var(--primary); }
+        .modal-tab-content { display: none; flex-direction: column; }
+        .modal-tab-content.active { display: flex; }
+
+        /* --- Media Upload --- */
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.2); border-radius: var(--radius-md); padding: 2rem;
+            text-align: center; color: var(--text-muted); cursor: pointer; transition: var(--transition);
+            margin-bottom: 1.5rem;
+        }
+        .upload-area:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
+        .upload-area input[type="file"] { display: none; }
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+        .media-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000; }
+        .media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; }
+        .media-item .delete-media { position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
 
         /* --- Mobile Toggle --- */
         .mobile-header { display: none; padding: 1rem 1.5rem; background: rgba(11, 13, 21, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 150; border-bottom: 1px solid rgba(255, 255, 255, 0.05); justify-content: space-between; align-items: center; }
@@ -341,18 +361,45 @@
                 <h3 id="modal-title">Ajustes del Álbum</h3>
                 <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
-            <div class="form-group"><label>Nombre del Álbum</label><input type="text" id="edit-title"></div>
             
-            <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase;">Privacidad</label>
-            <div id="privacy-options" style="display:flex; flex-direction:column; gap:0.8rem; margin-bottom:1.5rem;">
-                <div class="nav-item" onclick="setPrivacy('private')" id="p-private" style="border:1px solid rgba(255,255,255,0.1)">🔒 Privado</div>
-                <div class="nav-item" onclick="setPrivacy('protected')" id="p-protected" style="border:1px solid rgba(255,255,255,0.1)">🛡️ Protegido (Con Solicitud)</div>
-                <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)">🌍 Público</div>
+            <div class="modal-tabs">
+                <div class="modal-tab active" onclick="switchModalTab('general')" id="tab-general">General</div>
+                <div class="modal-tab" onclick="switchModalTab('media')" id="tab-media">Multimedia</div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="deleteAlbum()">Eliminar</button>
-                <button class="btn-auth" onclick="saveAlbumSettings()">Guardar</button>
+            <!-- TAB: GENERAL -->
+            <div id="content-general" class="modal-tab-content active">
+                <div class="form-group"><label>Nombre del Álbum</label><input type="text" id="edit-title"></div>
+                
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase;">Privacidad</label>
+                <div id="privacy-options" style="display:flex; flex-direction:column; gap:0.8rem; margin-bottom:1.5rem;">
+                    <div class="nav-item" onclick="setPrivacy('private')" id="p-private" style="border:1px solid rgba(255,255,255,0.1)">🔒 Privado</div>
+                    <div class="nav-item" onclick="setPrivacy('protected')" id="p-protected" style="border:1px solid rgba(255,255,255,0.1)">🛡️ Protegido (Con Solicitud)</div>
+                    <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)">🌍 Público</div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="deleteAlbum()">Eliminar Álbum</button>
+                    <button class="btn-auth" onclick="saveAlbumSettings()">Guardar</button>
+                </div>
+            </div>
+
+            <!-- TAB: MULTIMEDIA -->
+            <div id="content-media" class="modal-tab-content">
+                <label class="upload-area" id="upload-dropzone">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">☁️</div>
+                    <div style="font-weight: 600;">Haz clic o arrastra archivos aquí</div>
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">Imágenes o Videos (MP4)</div>
+                    <input type="file" id="media-upload-input" multiple accept="image/*,video/mp4">
+                </label>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Archivos Subidos</label>
+                    <div id="media-loader" class="spinner" style="width:20px; height:20px; border-width:2px; display:none;"></div>
+                </div>
+                <div id="media-preview-grid" class="media-grid">
+                    <!-- Media items will be injected here -->
+                </div>
             </div>
         </div>
     </div>
@@ -596,10 +643,110 @@
             currentAlbum = id;
             document.getElementById('edit-title').value = title;
             setPrivacy(isPri ? 'private' : (isPub ? 'public' : 'protected'));
+            switchModalTab('general');
             document.getElementById('edit-modal').style.display = 'flex';
+            loadAlbumMedia();
         }
 
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
+
+        function switchModalTab(tabId) {
+            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('content-' + tabId).classList.add('active');
+        }
+
+        async function loadAlbumMedia() {
+            const grid = document.getElementById('media-preview-grid');
+            const loader = document.getElementById('media-loader');
+            if(!grid || !loader) return;
+            loader.style.display = 'block';
+            grid.innerHTML = '';
+            
+            const { data: mediaItems, error } = await supabaseApp.from('media').select('*').eq('album_id', currentAlbum).order('order_index', { ascending: true });
+            loader.style.display = 'none';
+            
+            if (error) { showToast('Error cargando multimedia', 'error'); return; }
+            if (mediaItems.length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); font-size:0.8rem; padding:1rem;">No hay archivos multimedia subidos.</div>';
+                return;
+            }
+            
+            grid.innerHTML = mediaItems.map(m => `
+                <div class="media-item">
+                    ${m.type === 'video' ? `<video src="${m.url}#t=0.1" muted></video>` : `<img src="${m.url}">`}
+                    <button class="delete-media" onclick="deleteMedia('${m.id}', '${m.url}')">✕</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteMedia(mediaId, url) {
+            if (!confirm('¿Borrar archivo permanentemente?')) return;
+            const loader = document.getElementById('media-loader');
+            loader.style.display = 'block';
+            
+            try {
+                // Extraer el path correcto para Supabase Storage
+                // Ejemplo de url: https://xxx.supabase.co/storage/v1/object/public/souvenir-media/albumId/UUID.png
+                const pathParts = url.split('/souvenir-media/');
+                if (pathParts.length > 1) {
+                    const path = pathParts[1];
+                    await supabaseApp.storage.from('souvenir-media').remove([path]);
+                }
+                
+                // Remover de base de datos
+                await supabaseApp.from('media').delete().eq('id', mediaId);
+                showToast('Archivo eliminado', 'success');
+                loadAlbumMedia();
+            } catch (e) {
+                showToast('Error al eliminar', 'error');
+                loader.style.display = 'none';
+            }
+        }
+
+        // Configurar la zona de carga (Drag and Drop / Input)
+        const uploadInput = document.getElementById('media-upload-input');
+        if (uploadInput) {
+            uploadInput.addEventListener('change', async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                
+                const loader = document.getElementById('media-loader');
+                loader.style.display = 'block';
+                
+                // Obtener el order_index actual
+                const { data: existing } = await supabaseApp.from('media').select('order_index').eq('album_id', currentAlbum).order('order_index', { ascending: false }).limit(1);
+                let nextIndex = existing && existing.length > 0 ? existing[0].order_index + 1 : 0;
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${currentAlbum}/${crypto.randomUUID()}.${fileExt}`;
+                    const fileType = file.type.startsWith('video') ? 'video' : 'image';
+                    
+                    showToast(`Subiendo ${i+1} de ${files.length}...`);
+                    
+                    const { error: uploadError } = await supabaseApp.storage.from('souvenir-media').upload(fileName, file);
+                    if (uploadError) { showToast('Error al subir: ' + uploadError.message, 'error'); continue; }
+                    
+                    const { data: publicUrlData } = supabaseApp.storage.from('souvenir-media').getPublicUrl(fileName);
+                    const publicUrl = publicUrlData.publicUrl;
+                    
+                    await supabaseApp.from('media').insert({
+                        album_id: currentAlbum,
+                        url: publicUrl,
+                        type: fileType,
+                        order_index: nextIndex++
+                    });
+                }
+                
+                uploadInput.value = ''; // Limpiar input
+                showToast('Subida completada', 'success');
+                loadAlbumMedia();
+                loadDashboard(); // Actualizar contador de archivos
+            });
+        }
 
         function setPrivacy(p) {
             selectedPrivacy = p;
