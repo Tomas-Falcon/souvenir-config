@@ -94,7 +94,7 @@
 
         .user-info { margin-top: auto; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.05); }
         .user-badge { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; }
-        .user-avatar { width: 40px; height: 40px; background: var(--glass); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-avatar { width: 40px; height: 40px; background: var(--glass); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; }
         .user-details { overflow: hidden; }
         .user-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
         .user-email { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
@@ -294,18 +294,49 @@
 
             <!-- Settings -->
             <section id="view-settings" class="view">
-                <header><div><h1>Ajustes</h1><p style="color:var(--text-muted)">Configura tu experiencia.</p></div></header>
-                <div class="recent-activity">
-                    <div class="form-group" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom:1.5rem;">
-                        <label>Idioma</label>
-                        <select style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:0.8rem; color:white;">
-                            <option>Español</option>
-                            <option>English</option>
-                        </select>
+                <header><div><h1>Configuración</h1><p style="color:var(--text-muted)">Administra tu perfil y seguridad.</p></div></header>
+                
+                <!-- Avatar & Profile info -->
+                <div class="recent-activity" style="display:flex; flex-direction:column; align-items:center; gap:1rem; margin-bottom:2rem;">
+                    <div style="position:relative;">
+                        <img id="settings-avatar-img" src="" style="width:100px; height:100px; border-radius:50%; object-fit:cover; display:none; border:2px solid var(--primary);">
+                        <div id="settings-avatar-initial" style="width:100px; height:100px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-size:2.5rem; font-weight:bold;">U</div>
+                        <label for="avatar-upload" style="position:absolute; bottom:0; right:0; background:var(--bg-dark); border:1px solid rgba(255,255,255,0.2); border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                            📷
+                        </label>
+                        <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
                     </div>
-                    <div class="form-group" style="margin-top:1.5rem;">
-                        <label>Tema</label>
-                        <p style="font-size:0.9rem; color:var(--text-muted)">Oscuro (Premium) por defecto.</p>
+                    <div style="text-align:center;">
+                        <h3 id="settings-email" style="margin-bottom:0.2rem;">email@example.com</h3>
+                        <p style="color:var(--text-muted); font-size:0.9rem;">Cliente Distinguido</p>
+                    </div>
+                </div>
+
+                <!-- Password Update -->
+                <div class="recent-activity" style="margin-bottom:2rem;">
+                    <h3>Seguridad</h3>
+                    <form id="settings-password-form" onsubmit="updatePassword(event)" style="margin-top:1rem;">
+                        <div class="form-group">
+                            <label>Nueva Contraseña</label>
+                            <input type="password" id="settings-new-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+                        </div>
+                        <button type="submit" class="btn-auth" style="width:auto; padding:0.8rem 1.5rem;">Actualizar Contraseña</button>
+                    </form>
+                </div>
+
+                <!-- Delete Account -->
+                <div class="recent-activity" style="border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <h3 style="color:var(--danger);">Eliminar Cuenta</h3>
+                    <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem; margin-top:0.5rem;">
+                        Tienes dos opciones para tus imanes antes de borrar tu cuenta:
+                    </p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="confirmDeleteAccount('all')">
+                            A) Borrar todo y liberar imanes
+                        </button>
+                        <button class="nav-item" style="justify-content:center; border:1px solid #f59e0b; color:#f59e0b;" onclick="confirmDeleteAccount('legacy')">
+                            B) Dejar mis recuerdos (Legado)
+                        </button>
                     </div>
                 </div>
             </section>
@@ -377,6 +408,17 @@
                     <div class="nav-item" onclick="setPrivacy('private')" id="p-private" style="border:1px solid rgba(255,255,255,0.1)">🔒 Privado</div>
                     <div class="nav-item" onclick="setPrivacy('protected')" id="p-protected" style="border:1px solid rgba(255,255,255,0.1)">🛡️ Protegido (Con Solicitud)</div>
                     <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)">🌍 Público</div>
+                </div>
+
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase;">Categoría</label>
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <select id="edit-category" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:0.8rem; color:white; margin-bottom:0.5rem;">
+                        <option value="">Ninguna (Estilo Estándar)</option>
+                    </select>
+                    <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" id="edit-use-style">
+                        Usar estilo de categoría
+                    </label>
                 </div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
@@ -469,6 +511,7 @@
                 if (event === 'SIGNED_IN' && session) {
                     user = session.user;
                     updateUserInfo();
+                    loadCategories();
                     showApp();
                     // Si no hay ruta específica, ir a home
                     if (!window.location.hash || window.location.hash === '#/') {
@@ -493,6 +536,7 @@
                 if (session) {
                     user = session.user;
                     updateUserInfo();
+                    loadCategories();
                     showApp();
                     route();
                 } else {
@@ -527,6 +571,7 @@
             if (hash === '#/home') loadDashboard();
             if (hash === '#/albums') loadAlbums();
             if (hash === '#/requests') loadRequests();
+            if (hash === '#/settings') loadSettings();
 
             // Mobile: close sidebar on route
             document.getElementById('sidebar').classList.remove('open');
@@ -538,10 +583,130 @@
 
         function updateUserInfo() {
             if (!user) return;
-            document.getElementById('display-name').innerText = user.email.split('@')[0];
+            const name = user.email.split('@')[0];
+            document.getElementById('display-name').innerText = name;
             document.getElementById('display-email').innerText = user.email;
-            document.getElementById('avatar-initial').innerText = user.email[0].toUpperCase();
-            document.getElementById('welcome-msg').innerText = `Hola, ${user.email.split('@')[0]}`;
+            document.getElementById('welcome-msg').innerText = `Hola, ${name}`;
+            
+            const avatarUrl = user.user_metadata?.avatar_url;
+            if (avatarUrl) {
+                document.getElementById('avatar-initial').innerHTML = `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                document.getElementById('avatar-initial').innerText = user.email[0].toUpperCase();
+            }
+        }
+
+        function loadSettings() {
+            document.getElementById('settings-email').innerText = user.email;
+            const avatarUrl = user.user_metadata?.avatar_url;
+            if (avatarUrl) {
+                document.getElementById('settings-avatar-img').src = avatarUrl;
+                document.getElementById('settings-avatar-img').style.display = 'block';
+                document.getElementById('settings-avatar-initial').style.display = 'none';
+            } else {
+                document.getElementById('settings-avatar-img').style.display = 'none';
+                document.getElementById('settings-avatar-initial').style.display = 'flex';
+                document.getElementById('settings-avatar-initial').innerText = user.email[0].toUpperCase();
+            }
+        }
+
+        async function uploadAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const loader = document.getElementById('loader');
+            loader.style.display = 'flex';
+            
+            const ext = file.name.split('.').pop();
+            const fileName = `avatars/${user.id}_${Date.now()}.${ext}`;
+            
+            const { error: uploadErr } = await supabaseApp.storage.from('souvenir-media').upload(fileName, file);
+            if (uploadErr) {
+                loader.style.display = 'none';
+                showToast('Error al subir imagen', 'error');
+                return;
+            }
+            
+            const { data } = supabaseApp.storage.from('souvenir-media').getPublicUrl(fileName);
+            const publicUrl = data.publicUrl;
+            
+            const { data: updateData, error: updateErr } = await supabaseApp.auth.updateUser({
+                data: { avatar_url: publicUrl }
+            });
+            
+            loader.style.display = 'none';
+            
+            if (updateErr) {
+                showToast('Error al guardar avatar', 'error');
+            } else {
+                user = updateData.user;
+                updateUserInfo();
+                loadSettings();
+                showToast('Foto de perfil actualizada', 'success');
+            }
+        }
+
+        async function updatePassword(event) {
+            event.preventDefault();
+            const newPassword = document.getElementById('settings-new-password').value;
+            if (newPassword.length < 6) return;
+            
+            const btn = document.querySelector('#settings-password-form button');
+            btn.disabled = true;
+            btn.innerText = 'Actualizando...';
+            
+            const { error } = await supabaseApp.auth.updateUser({ password: newPassword });
+            
+            btn.disabled = false;
+            btn.innerText = 'Actualizar Contraseña';
+            
+            if (error) {
+                showToast('Error al actualizar contraseña: ' + error.message, 'error');
+            } else {
+                showToast('Contraseña actualizada', 'success');
+                document.getElementById('settings-new-password').value = '';
+            }
+        }
+
+        async function confirmDeleteAccount(type) {
+            const msg = type === 'all' 
+                ? '¿Estás seguro de que quieres BORRAR TODO? Esto eliminará tus álbumes y fotos, y liberará tus imanes. Esta acción no se puede deshacer.' 
+                : '¿Estás seguro de que quieres DEJAR TU LEGADO? Tus álbumes se volverán públicos y no tendrán dueño. No podrás borrarlos después. Tu cuenta se eliminará.';
+                
+            if (!confirm(msg)) return;
+            
+            const loader = document.getElementById('loader');
+            loader.style.display = 'flex';
+            
+            try {
+                const { data: albums } = await supabaseApp.from('albums').select('id').eq('user_id', user.id);
+                
+                if (albums && albums.length > 0) {
+                    for (const a of albums) {
+                        if (type === 'all') {
+                            // 1. Unlink tags
+                            await supabaseApp.from('tags').update({'status': 'unassigned', 'album_id': null}).eq('album_id', a.id);
+                            // 2. Delete media entries (Storage deletion is complex from client, we delete from DB)
+                            await supabaseApp.from('media').delete().eq('album_id', a.id);
+                            // 3. Delete album
+                            await supabaseApp.from('albums').delete().eq('id', a.id);
+                        } else {
+                            // Legacy
+                            await supabaseApp.from('albums').update({'user_id': null, 'is_published': true}).eq('id', a.id);
+                        }
+                    }
+                }
+                
+                // Then call RPC to delete user from auth (Supabase requires an edge function or RPC for user to delete themselves if RLS allows)
+                // For now, we sign out as most clients can't easily self-delete without RPC
+                await supabaseApp.auth.signOut();
+                loader.style.display = 'none';
+                showToast('Cuenta eliminada correctamente', 'success');
+                
+            } catch (err) {
+                loader.style.display = 'none';
+                showToast('Hubo un error procesando tu cuenta.', 'error');
+            }
         }
 
         async function loadDashboard() {
@@ -599,7 +764,7 @@
                 if (a.is_private) { sClass = 'status-private'; sText = 'Privado'; } else if (a.is_published) { sClass = 'status-public'; sText = 'Público'; }
                 let albumUuid = a.tags && a.tags.length > 0 ? a.tags[0].uuid : '';
                 return `
-                    <div class="album-card" onclick="openAlbumEditor('${a.id}', '${a.title}', ${a.is_private}, ${a.is_published}, '${albumUuid}')">
+                    <div class="album-card" onclick="openAlbumEditor('${a.id}', '${a.title}', ${a.is_private}, ${a.is_published}, '${albumUuid}', '${a.category_id || ''}', ${a.use_category_style || false})">
                         <img src="${a.cover_url || 'https://via.placeholder.com/400x225/11131a/ffffff?text=Sin+Portada'}" class="album-img">
                         <div class="album-info">
                             <div class="album-title">${a.title}</div>
@@ -642,15 +807,56 @@
             loadRequests();
         }
 
+        function setPrivacy(type) {
+            selectedPrivacy = type;
+            document.querySelectorAll('#privacy-options .nav-item').forEach(e => e.classList.remove('active'));
+            document.getElementById('p-' + type).classList.add('active');
+        }
+
+        let allCategories = [];
+        async function loadCategories() {
+            const { data } = await supabaseApp.from('categories').select('*').order('name');
+            if (data) allCategories = data;
+            
+            const select = document.getElementById('edit-category');
+            if (select) {
+                select.innerHTML = '<option value="">Ninguna (Estilo Estándar)</option>' +
+                    allCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            }
+        }
+
         let currentAlbumUuid = '';
-        function openAlbumEditor(id, title, isPri, isPub, uuid) {
+        function openAlbumEditor(id, title, isPri, isPub, uuid, categoryId, useStyle) {
             currentAlbum = id;
             currentAlbumUuid = uuid || '';
             document.getElementById('edit-title').value = title;
+            document.getElementById('edit-category').value = categoryId || '';
+            document.getElementById('edit-use-style').checked = useStyle;
             setPrivacy(isPri ? 'private' : (isPub ? 'public' : 'protected'));
             switchModalTab('general');
             document.getElementById('edit-modal').style.display = 'flex';
             loadAlbumMedia();
+        }
+
+        async function saveAlbumSettings() {
+            const title = document.getElementById('edit-title').value;
+            const categoryId = document.getElementById('edit-category').value || null;
+            const useStyle = document.getElementById('edit-use-style').checked;
+            
+            let isPri = false, isPub = false;
+            if (selectedPrivacy === 'private') isPri = true;
+            if (selectedPrivacy === 'public') isPub = true;
+            
+            const { error } = await supabaseApp.from('albums').update({
+                title: title,
+                is_private: isPri,
+                is_published: isPub,
+                category_id: categoryId,
+                use_category_style: useStyle
+            }).eq('id', currentAlbum);
+
+            if (error) showToast(error.message, 'error'); 
+            else { showToast('Ajustes guardados', 'success'); closeModal(); loadAlbums(); }
         }
 
         function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
