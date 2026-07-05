@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             /* Colores base extraídos de _screenDecoration en Flutter */
@@ -210,17 +213,26 @@
             border-radius: 20px; font-size: 0.8rem; color: white;
             border: 1px solid rgba(255,255,255,0.1);
         }
-
         .loader {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2);
             border-top-color: var(--primary); border-radius: 50%;
+            align-items: center; justify-content: center; z-index: 50; display: none;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* Fancybox Customization for Dark Theme */
+        .fancybox__container {
+            --fancybox-bg: rgba(0, 0, 0, 0.95);
+            --fancybox-color: #fff;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body id="body">
 
@@ -241,28 +253,12 @@
         <div id="gallery" class="gallery"></div>
     </main>
 
-    <div id="viewer">
-        <div id="viewer-bg"></div>
-        <div class="v-header">
-            <span style="font-weight: 600; opacity: 0.7;">RECUERDO</span>
-            <button class="v-close" onclick="closeViewer()">✕</button>
-        </div>
-        <div class="v-nav">
-            <button class="v-btn" onclick="nav(-1)">❮</button>
-            <button class="v-btn" onclick="nav(1)">❯</button>
-        </div>
-        <div class="v-content" id="v-content"></div>
-        <div class="v-info" id="v-info"></div>
-    </div>
-
     <script>
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
         const SUPABASE_KEY = "sb_publishable_1ZymSc3eQia5scNC2mmWXw_ke1Wlppb";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let mediaItems = [];
-        let cur = 0;
-        let startX = 0;
 
         async function init() {
             const uuid = window.location.pathname.split('/').pop();
@@ -292,7 +288,6 @@
 
                 if (album.user_id === null) {
                     document.getElementById('legacy-banner').style.display = 'block';
-                    // Almacenamos el ID para el botón
                     window.currentAlbumId = tag.album_id;
                 }
 
@@ -307,13 +302,22 @@
 
         function render() {
             const g = document.getElementById('gallery');
+            g.innerHTML = '';
+            
+            Fancybox.bind("[data-fancybox='gallery']", {
+                Images: { initialSize: "fit" },
+                Toolbar: { display: { left: [], middle: ["infobar"], right: ["close"] } }
+            });
+
             mediaItems.forEach((item, i) => {
-                const el = document.createElement('div');
+                const el = document.createElement('a');
                 el.className = 'media-item';
                 el.style.transitionDelay = `${i * 0.04}s`;
-                el.onclick = () => open(i);
+                el.href = item.url;
+                el.setAttribute('data-fancybox', 'gallery');
 
                 if (item.type === 'video') {
+                    el.setAttribute('data-type', 'video');
                     const v = document.createElement('video');
                     v.src = item.url + "#t=0.5";
                     v.muted = true; v.playsInline = true;
@@ -332,58 +336,7 @@
             });
         }
 
-        function open(i) {
-            cur = i;
-            update();
-            document.getElementById('viewer').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
 
-        function update() {
-            const item = mediaItems[cur];
-            const c = document.getElementById('v-content');
-            const bg = document.getElementById('viewer-bg');
-            const inf = document.getElementById('v-info');
-            c.innerHTML = '';
-            inf.innerText = `${cur + 1} / ${mediaItems.length}`;
-            if (item.type === 'video') {
-                const v = document.createElement('video');
-                v.src = item.url; v.controls = true; v.autoplay = true;
-                c.appendChild(v);
-                bg.style.backgroundImage = 'none';
-            } else {
-                const img = document.createElement('img');
-                img.src = item.url;
-                c.appendChild(img);
-                bg.style.backgroundImage = `url(${item.url})`;
-            }
-        }
-
-        function nav(d) {
-            cur = (cur + d + mediaItems.length) % mediaItems.length;
-            update();
-        }
-
-        function closeViewer() {
-            document.getElementById('viewer').style.display = 'none';
-            document.getElementById('v-content').innerHTML = '';
-            document.body.style.overflow = 'auto';
-        }
-
-        window.addEventListener('keydown', e => {
-            const v = document.getElementById('viewer');
-            if (v.style.display !== 'flex') return;
-            if (e.key === 'Escape') closeViewer();
-            if (e.key === 'ArrowRight') nav(1);
-            if (e.key === 'ArrowLeft') nav(-1);
-        });
-
-        const v = document.getElementById('viewer');
-        v.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-        v.addEventListener('touchend', e => {
-            const diff = startX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 50) nav(diff > 0 ? 1 : -1);
-        });
 
         function claimAlbum() {
             if (window.currentAlbumId) {

@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --bg-dark: #0B0F19;
@@ -65,13 +68,14 @@
             font-weight: 700; cursor: pointer; margin-top: 2rem;
         }
 
-        /* --- Viewer --- */
-        #viewer { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; align-items: center; justify-content: center; }
-        .v-content img, .v-content video { max-width: 100%; max-height: 90vh; object-fit: contain; }
-        .v-close { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(255,255,255,0.1); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
-
         .loader { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Fancybox Customization for Dark Theme */
+        .fancybox__container {
+            --fancybox-bg: rgba(0, 0, 0, 0.95);
+            --fancybox-color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -94,19 +98,14 @@
         <div id="gallery" class="gallery"></div>
 
         <!-- Protected View -->
-        <div id="protected-view">
-            <div class="lock-icon">🛡️</div>
-            <h3>Recuerdo Protegido</h3>
-            <p style="color:var(--text-muted); margin-top:1rem;">Este álbum es privado. Solicita acceso al dueño para ver el contenido.</p>
-            <button class="btn-request" id="btn-request" onclick="requestAccess()">Solicitar Acceso</button>
-            <div id="request-status" style="margin-top:1.5rem; font-weight:600; display:none;">Solicitud enviada. Espera aprobación.</div>
+        <div id="protected-view" style="display:none; text-align:center; padding: 3rem 1.5rem; background: var(--card-bg); border-radius: var(--radius-md); border: 1px solid rgba(255,255,255,0.05); margin-top:2rem;">
+            <div style="font-size:3rem; margin-bottom:1rem;">🛡️</div>
+            <h2 style="font-family:'Outfit', sans-serif; margin-bottom:0.5rem;">Álbum Protegido</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">El propietario ha restringido el acceso. Puedes solicitar permiso para verlo.</p>
+            <button id="btn-request" onclick="requestAccess()" style="background:var(--primary); color:white; border:none; padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer;">Solicitar Acceso</button>
+            <div id="request-status" style="display:none; color:var(--success); font-weight:500; margin-top:1rem;">✅ Solicitud enviada</div>
         </div>
     </main>
-
-    <div id="viewer">
-        <button class="v-close" onclick="closeViewer()">✕</button>
-        <div class="v-content" id="v-content"></div>
-    </div>
 
     <script>
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
@@ -156,13 +155,24 @@
 
         function render() {
             const g = document.getElementById('gallery');
+            g.innerHTML = '';
+            
+            // Initialize Fancybox
+            Fancybox.bind("[data-fancybox='gallery']", {
+                Images: { initialSize: "fit" },
+                Toolbar: { display: { left: [], middle: ["infobar"], right: ["close"] } }
+            });
+
             mediaItems.forEach((item, i) => {
-                const el = document.createElement('div');
+                const el = document.createElement('a');
                 el.className = 'media-item';
                 el.style.transitionDelay = `${i * 0.04}s`;
-                el.onclick = () => openViewer(i);
+                el.href = item.url;
+                el.setAttribute('data-fancybox', 'gallery');
 
                 if (item.type === 'video') {
+                    // Fancybox handles video natively if we add data-type
+                    el.setAttribute('data-type', 'video');
                     const v = document.createElement('video');
                     v.src = item.url + "#t=0.5";
                     v.muted = true; v.playsInline = true;
@@ -192,7 +202,7 @@
             const { error } = await supabase.from('pending_requests').insert({ album_id: albumId, status: 'pending' });
             
             if (error) {
-                alert("Error al enviar solicitud: " + error.message);
+                Swal.fire({title: 'Error', text: error.message, icon: 'error', background: 'var(--bg-dark)', color: 'white'});
                 btn.disabled = false;
                 btn.innerText = "Solicitar Acceso";
             } else {
@@ -201,26 +211,7 @@
             }
         }
 
-        function openViewer(i) {
-            const item = mediaItems[i];
-            const c = document.getElementById('v-content');
-            c.innerHTML = '';
-            if (item.type === 'video') {
-                const v = document.createElement('video');
-                v.src = item.url; v.controls = true; v.autoplay = true;
-                c.appendChild(v);
-            } else {
-                const img = document.createElement('img');
-                img.src = item.url;
-                c.appendChild(img);
-            }
-            document.getElementById('viewer').style.display = 'flex';
-        }
-
-        function closeViewer() {
-            document.getElementById('viewer').style.display = 'none';
-            document.getElementById('v-content').innerHTML = '';
-        }
+        // Custom viewer functions removed in favor of Fancybox
 
         function claimAlbum() {
             if (window.currentAlbumId) {

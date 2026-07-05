@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <style>
         :root {
             --bg-dark: #07090e;
@@ -405,9 +408,9 @@
                 
                 <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase;">Privacidad</label>
                 <div id="privacy-options" style="display:flex; flex-direction:column; gap:0.8rem; margin-bottom:1.5rem;">
-                    <div class="nav-item" onclick="setPrivacy('private')" id="p-private" style="border:1px solid rgba(255,255,255,0.1)">🔒 Privado</div>
-                    <div class="nav-item" onclick="setPrivacy('protected')" id="p-protected" style="border:1px solid rgba(255,255,255,0.1)">🛡️ Protegido (Con Solicitud)</div>
-                    <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)">🌍 Público</div>
+                    <div class="nav-item" onclick="setPrivacy('private')" id="p-private" style="border:1px solid rgba(255,255,255,0.1)"><i data-lucide="lock"></i> Privado</div>
+                    <div class="nav-item" onclick="setPrivacy('protected')" id="p-protected" style="border:1px solid rgba(255,255,255,0.1)"><i data-lucide="shield"></i> Protegido (Con Solicitud)</div>
+                    <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)"><i data-lucide="globe"></i> Público</div>
                 </div>
 
                 <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase;">Categoría</label>
@@ -431,7 +434,7 @@
             <!-- TAB: MULTIMEDIA -->
             <div id="content-media" class="modal-tab-content">
                 <label class="upload-area" id="upload-dropzone">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">☁️</div>
+                    <i data-lucide="cloud-upload" style="width: 48px; height: 48px; margin-bottom: 0.5rem; color: var(--primary);"></i>
                     <div style="font-weight: 600;">Haz clic o arrastra archivos aquí</div>
                     <div style="font-size: 0.8rem; margin-top: 0.5rem;">Imágenes o Videos (MP4)</div>
                     <input type="file" id="media-upload-input" multiple accept="image/*,video/mp4">
@@ -534,26 +537,35 @@
             const urlParams = new URLSearchParams(window.location.search);
             const claimId = urlParams.get('claim_album');
             if (claimId && user) {
-                if (confirm('¿Quieres reclamar este recuerdo y añadirlo a tu cuenta?')) {
+                const result = await Swal.fire({
+                    title: '¡Álbum Encontrado!',
+                    text: '¿Quieres reclamar este recuerdo y añadirlo a tu cuenta?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--primary)',
+                    cancelButtonColor: 'rgba(255,255,255,0.1)',
+                    confirmButtonText: 'Sí, Reclamar',
+                    cancelButtonText: 'Cancelar',
+                    background: 'var(--bg-dark)',
+                    color: 'var(--text-main)'
+                });
+
+                if (result.isConfirmed) {
                     const { error } = await supabaseApp.from('albums')
                         .update({ user_id: user.id, is_published: false })
                         .eq('id', claimId).is('user_id', null);
                     
                     if (error) {
-                        showToast('Error al reclamar el álbum: ' + error.message, 'error');
+                        Swal.fire({title: 'Error', text: error.message, icon: 'error', background: 'var(--bg-dark)', color: 'var(--text-main)'});
                     } else {
-                        showToast('¡Recuerdo reclamado con éxito!', 'success');
+                        Swal.fire({title: '¡Reclamado!', text: 'Recuerdo añadido a tu colección.', icon: 'success', background: 'var(--bg-dark)', color: 'var(--text-main)'});
                         // Clean the URL parameter without reloading
                         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
                         window.history.replaceState({path:newUrl}, '', newUrl);
-                        if (window.location.hash === '#/albums') {
-                            loadAlbums();
-                        } else {
-                            window.location.hash = '#/albums';
-                        }
+                        if (window.location.hash === '#/albums') loadAlbums();
+                        else window.location.hash = '#/albums';
                     }
                 } else {
-                    // Si cancela, limpiamos la URL
                     const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
                     window.history.replaceState({path:newUrl}, '', newUrl);
                 }
@@ -686,7 +698,19 @@
                 ? '¿Estás seguro de que quieres BORRAR TODO? Esto eliminará tus álbumes y fotos, y liberará tus imanes. Esta acción no se puede deshacer.' 
                 : '¿Estás seguro de que quieres DEJAR TU LEGADO? Tus álbumes se volverán públicos y no tendrán dueño. No podrás borrarlos después. Tu cuenta se eliminará.';
                 
-            if (!confirm(msg)) return;
+            const res = await Swal.fire({
+                title: type === 'all' ? '¿Borrar todo?' : '¿Dejar Legado?',
+                text: msg,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger)',
+                cancelButtonColor: 'rgba(255,255,255,0.1)',
+                confirmButtonText: 'Sí, estoy seguro',
+                cancelButtonText: 'Cancelar',
+                background: 'var(--bg-dark)',
+                color: 'var(--text-main)'
+            });
+            if (!res.isConfirmed) return;
             
             const loader = document.getElementById('loader');
             loader.style.display = 'flex';
@@ -748,7 +772,7 @@
             if (recent.length > 0) {
                 list.innerHTML = recent.map(a => `
                     <div class="activity-item">
-                        <div class="activity-icon">📍</div>
+                        <div class="activity-icon"><i data-lucide="map-pin"></i></div>
                         <div>
                             <div style="font-size:0.9rem; font-weight:600;">Escaneo detectado</div>
                             <div style="font-size:0.8rem; color:var(--text-muted)">${new Date(a.last_scanned_at).toLocaleString()}</div>
@@ -758,6 +782,7 @@
             } else {
                 list.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No hay escaneos recientes.</p>';
             }
+            lucide.createIcons();
         }
 
         async function loadAlbums() {
@@ -801,9 +826,9 @@
             }
 
             container.innerHTML = requests.map(r => `
-                <div class="activity-item" style="padding: 1rem 1.5rem;">
-                    <div class="activity-icon">👤</div>
-                    <div style="flex:1">
+                <div class="activity-item" style="border-radius:12px; padding:1.2rem;">
+                    <div class="activity-icon" style="background:rgba(168, 85, 247, 0.2); color:var(--accent);"><i data-lucide="user-plus"></i></div>
+                    <div style="flex:1;">
                         <div style="font-weight:600;">Solicitud de Acceso</div>
                         <div style="font-size:0.8rem; color:var(--text-muted)">Para el álbum: <b>${r.albums.title}</b></div>
                     </div>
@@ -813,6 +838,7 @@
                     </div>
                 </div>
             `).join('');
+            lucide.createIcons();
         }
 
         async function handleRequest(id, status) {
@@ -879,6 +905,7 @@
             document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             document.getElementById('content-' + tabId).classList.add('active');
+            lucide.createIcons();
         }
 
         async function loadAlbumMedia() {
@@ -898,12 +925,30 @@
             }
             
             grid.innerHTML = mediaItems.map(m => `
-                <div class="media-item">
+                <div class="media-item" data-id="${m.id}" data-url="${m.url}">
                     ${m.type === 'video' ? `<video src="${m.url}#t=0.1" muted></video>` : `<img src="${m.url}">`}
-                    <button class="delete-media" onclick="deleteMedia('${m.id}', '${m.url}')" title="Eliminar">✕</button>
-                    ${m.type === 'image' ? `<button class="cover-media" onclick="setCoverUrl('${m.url}')" title="Usar como Portada">⭐</button>` : ''}
+                    <button class="delete-media" onclick="deleteMedia('${m.id}', '${m.url}')" title="Eliminar"><i data-lucide="x" style="width: 16px; height: 16px;"></i></button>
+                    ${m.type === 'image' ? `<button class="cover-media" onclick="setCoverUrl('${m.url}')" title="Usar como Portada"><i data-lucide="star" style="width: 16px; height: 16px;"></i></button>` : ''}
                 </div>
             `).join('');
+            
+            lucide.createIcons();
+            
+            // Initialize Sortable
+            Sortable.create(grid, {
+                animation: 150,
+                onEnd: async function (evt) {
+                    const items = Array.from(grid.children);
+                    const updates = items.map((el, index) => ({
+                        id: el.getAttribute('data-id'),
+                        order_index: index,
+                        album_id: currentAlbum // Required for upsert if PK is id
+                    }));
+                    
+                    const { error } = await supabaseApp.from('media').upsert(updates, { onConflict: 'id' });
+                    if (error) showToast('Error al reordenar', 'error');
+                }
+            });
         }
 
         async function setCoverUrl(url) {
@@ -924,7 +969,19 @@
         }
 
         async function deleteMedia(mediaId, url) {
-            if (!confirm('¿Borrar archivo permanentemente?')) return;
+            const res = await Swal.fire({
+                title: '¿Borrar archivo?',
+                text: 'Se eliminará permanentemente de tu álbum.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: 'var(--danger)',
+                cancelButtonColor: 'rgba(255,255,255,0.1)',
+                confirmButtonText: 'Borrar',
+                cancelButtonText: 'Cancelar',
+                background: 'var(--bg-dark)',
+                color: 'var(--text-main)'
+            });
+            if (!res.isConfirmed) return;
             const loader = document.getElementById('media-loader');
             loader.style.display = 'block';
             
@@ -1196,7 +1253,10 @@
             }
         });
 
-        window.onload = init;
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            init();
+        });
     </script>
 </body>
 </html>
