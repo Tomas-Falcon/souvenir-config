@@ -231,6 +231,13 @@
 
     <main class="gallery-wrapper">
         <div id="loader" class="loader"></div>
+        
+        <div id="legacy-banner" style="display:none; background: linear-gradient(135deg, var(--primary), var(--accent)); padding: 1.5rem; border-radius: var(--radius-md); text-align: center; margin-bottom: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <h3 style="margin-bottom: 0.5rem; color: white;">🎁 ¡Este es un Álbum Legado!</h3>
+            <p style="color: rgba(255,255,255,0.9); font-size: 0.9rem; margin-bottom: 1rem;">Su autor original lo ha liberado. Puedes reclamarlo y añadirlo a tu colección para siempre.</p>
+            <button onclick="claimAlbum()" style="background: white; color: var(--bg-dark); border: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Outfit', sans-serif;">Reclamar Recuerdo</button>
+        </div>
+
         <div id="gallery" class="gallery"></div>
     </main>
 
@@ -264,7 +271,7 @@
             try {
                 const { data: tag } = await supabaseClient
                     .from('tags')
-                    .select('album_id, albums(title, use_category_style, categories(style_json), media(url, type, order_index))')
+                    .select('album_id, albums(title, user_id, use_category_style, categories(style_json), media(url, type, order_index))')
                     .eq('uuid', uuid).single();
 
                 if (!tag || !tag.albums) {
@@ -281,6 +288,12 @@
                     document.documentElement.style.setProperty('--gradient-start', s.gradientStart + '38');
                     document.documentElement.style.setProperty('--primary', s.accentColor || s.gradientStart);
                     document.documentElement.style.setProperty('--accent', s.accentColor || s.gradientStart);
+                }
+
+                if (album.user_id === null) {
+                    document.getElementById('legacy-banner').style.display = 'block';
+                    // Almacenamos el ID para el botón
+                    window.currentAlbumId = tag.album_id;
                 }
 
                 mediaItems = (album.media || []).sort((a,b) => a.order_index - b.order_index);
@@ -371,6 +384,12 @@
             const diff = startX - e.changedTouches[0].clientX;
             if (Math.abs(diff) > 50) nav(diff > 0 ? 1 : -1);
         });
+
+        function claimAlbum() {
+            if (window.currentAlbumId) {
+                window.location.href = 'https://tomas-falcon.github.io/souvenir-config/?claim_album=' + window.currentAlbumId + '#/home';
+            }
+        }
 
         window.onload = init;
     </script>

@@ -465,6 +465,7 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <script src="utils.js"></script>
     <script>
         // CONFIG
         const SUPABASE_URL = "https://apknmsbrbmtjidmrngnk.supabase.co";
@@ -475,25 +476,6 @@
         let currentAlbum = null;
         let isSignUp = false;
         let selectedPrivacy = 'protected';
-
-        // Toast System
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            let icon = 'ℹ️';
-            if (type === 'success') icon = '✅';
-            if (type === 'error') icon = '❌';
-            toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 10);
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
 
         // ROUTING
         window.addEventListener('hashchange', route);
@@ -518,6 +500,7 @@
                         window.location.hash = '#/home';
                     }
                     route();
+                    checkLegacyClaim();
                 }
 
                 if (event === 'SIGNED_OUT') {
@@ -539,11 +522,42 @@
                     loadCategories();
                     showApp();
                     route();
+                    checkLegacyClaim();
                 } else {
                     showAuth();
                 }
             }
             document.getElementById('loader').style.display = 'none';
+        }
+
+        async function checkLegacyClaim() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const claimId = urlParams.get('claim_album');
+            if (claimId && user) {
+                if (confirm('¿Quieres reclamar este recuerdo y añadirlo a tu cuenta?')) {
+                    const { error } = await supabaseApp.from('albums')
+                        .update({ user_id: user.id, is_published: false })
+                        .eq('id', claimId).is('user_id', null);
+                    
+                    if (error) {
+                        showToast('Error al reclamar el álbum: ' + error.message, 'error');
+                    } else {
+                        showToast('¡Recuerdo reclamado con éxito!', 'success');
+                        // Clean the URL parameter without reloading
+                        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+                        window.history.replaceState({path:newUrl}, '', newUrl);
+                        if (window.location.hash === '#/albums') {
+                            loadAlbums();
+                        } else {
+                            window.location.hash = '#/albums';
+                        }
+                    }
+                } else {
+                    // Si cancela, limpiamos la URL
+                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+                    window.history.replaceState({path:newUrl}, '', newUrl);
+                }
+            }
         }
 
         function route() {
@@ -577,7 +591,6 @@
             document.getElementById('sidebar').classList.remove('open');
         }
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
         function showAuth() { document.getElementById('auth-view').style.display = 'flex'; document.getElementById('app-view').style.display = 'none'; }
         function showApp() { document.getElementById('auth-view').style.display = 'none'; document.getElementById('app-view').style.display = 'flex'; }
 
