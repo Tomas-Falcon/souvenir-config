@@ -172,6 +172,7 @@
         .media-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000; }
         .media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; }
         .media-item .delete-media { position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+        .media-item .cover-media { position: absolute; bottom: 4px; right: 4px; background: rgba(99, 102, 241, 0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
 
         /* --- Mobile Toggle --- */
         .mobile-header { display: none; padding: 1rem 1.5rem; background: rgba(11, 13, 21, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 150; border-bottom: 1px solid rgba(255, 255, 255, 0.05); justify-content: space-between; align-items: center; }
@@ -378,9 +379,10 @@
                     <div class="nav-item" onclick="setPrivacy('public')" id="p-public" style="border:1px solid rgba(255,255,255,0.1)">🌍 Público</div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="deleteAlbum()">Eliminar Álbum</button>
-                    <button class="btn-auth" onclick="saveAlbumSettings()">Guardar</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                    <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="deleteAlbum()">Eliminar</button>
+                    <button class="nav-item" style="justify-content:center; border:1px solid var(--primary); color:white;" onclick="viewPublicAlbum()">Ver Álbum</button>
+                    <button class="btn-auth" style="padding: 0.8rem;" onclick="saveAlbumSettings()">Guardar</button>
                 </div>
             </div>
 
@@ -584,7 +586,7 @@
             const container = document.getElementById('albums-container');
             container.innerHTML = '<div class="spinner" style="grid-column: 1/-1; margin: 2rem auto;"></div>';
             
-            const { data: albums, error } = await supabaseApp.from('albums').select('*, categories(name)').eq('user_id', user.id).order('created_at', { ascending: false });
+            const { data: albums, error } = await supabaseApp.from('albums').select('*, categories(name), tags(uuid)').eq('user_id', user.id).order('created_at', { ascending: false });
             if (error) { container.innerHTML = '<p>Error al cargar.</p>'; return; }
             
             if (albums.length === 0) {
@@ -595,8 +597,9 @@
             container.innerHTML = albums.map(a => {
                 let sClass = 'status-protected'; let sText = 'Protegido';
                 if (a.is_private) { sClass = 'status-private'; sText = 'Privado'; } else if (a.is_published) { sClass = 'status-public'; sText = 'Público'; }
+                let albumUuid = a.tags && a.tags.length > 0 ? a.tags[0].uuid : '';
                 return `
-                    <div class="album-card" onclick="openAlbumEditor('${a.id}', '${a.title}', ${a.is_private}, ${a.is_published})">
+                    <div class="album-card" onclick="openAlbumEditor('${a.id}', '${a.title}', ${a.is_private}, ${a.is_published}, '${albumUuid}')">
                         <img src="${a.cover_url || 'https://via.placeholder.com/400x225/11131a/ffffff?text=Sin+Portada'}" class="album-img">
                         <div class="album-info">
                             <div class="album-title">${a.title}</div>
@@ -639,8 +642,10 @@
             loadRequests();
         }
 
-        function openAlbumEditor(id, title, isPri, isPub) {
+        let currentAlbumUuid = '';
+        function openAlbumEditor(id, title, isPri, isPub, uuid) {
             currentAlbum = id;
+            currentAlbumUuid = uuid || '';
             document.getElementById('edit-title').value = title;
             setPrivacy(isPri ? 'private' : (isPub ? 'public' : 'protected'));
             switchModalTab('general');
@@ -676,9 +681,27 @@
             grid.innerHTML = mediaItems.map(m => `
                 <div class="media-item">
                     ${m.type === 'video' ? `<video src="${m.url}#t=0.1" muted></video>` : `<img src="${m.url}">`}
-                    <button class="delete-media" onclick="deleteMedia('${m.id}', '${m.url}')">✕</button>
+                    <button class="delete-media" onclick="deleteMedia('${m.id}', '${m.url}')" title="Eliminar">✕</button>
+                    ${m.type === 'image' ? `<button class="cover-media" onclick="setCoverUrl('${m.url}')" title="Usar como Portada">⭐</button>` : ''}
                 </div>
             `).join('');
+        }
+
+        async function setCoverUrl(url) {
+            const loader = document.getElementById('media-loader');
+            loader.style.display = 'block';
+            const { error } = await supabaseApp.from('albums').update({ cover_url: url }).eq('id', currentAlbum);
+            loader.style.display = 'none';
+            if (error) showToast('Error al actualizar portada', 'error');
+            else { showToast('Portada actualizada', 'success'); loadAlbums(); }
+        }
+
+        function viewPublicAlbum() {
+            if (!currentAlbumUuid) {
+                showToast('Este álbum no tiene un tag NFC vinculado.', 'error');
+                return;
+            }
+            window.open('https://tomas-falcon.github.io/souvenir-config/m/' + currentAlbumUuid, '_blank');
         }
 
         async function deleteMedia(mediaId, url) {
