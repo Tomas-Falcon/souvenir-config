@@ -267,7 +267,11 @@
                     .select('album_id, albums(title, use_category_style, categories(style_json), media(url, type, order_index))')
                     .eq('uuid', uuid).single();
 
-                if (!tag || !tag.albums) return;
+                if (!tag || !tag.albums) {
+                    document.getElementById('albumTitle').innerText = "Recuerdo No Disponible";
+                    document.getElementById('albumSubtitle').innerText = "Este recuerdo es privado o ha sido eliminado.";
+                    return;
+                }
 
                 const album = tag.albums;
                 document.getElementById('albumTitle').innerText = album.title;
@@ -354,6 +358,8 @@
         }
 
         window.addEventListener('keydown', e => {
+            const v = document.getElementById('viewer');
+            if (v.style.display !== 'flex') return;
             if (e.key === 'Escape') closeViewer();
             if (e.key === 'ArrowRight') nav(1);
             if (e.key === 'ArrowLeft') nav(-1);

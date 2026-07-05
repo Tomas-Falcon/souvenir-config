@@ -115,24 +115,24 @@
             if (!uuid || uuid.length < 30) return;
 
             try {
-                // 1. Fetch tag to get album_id (Tags are public)
-                const { data: tag } = await supabase.from('tags').select('album_id').eq('uuid', uuid).single();
+                // Consulta unificada como en 404.html
+                const { data: tag } = await supabase.from('tags').select('album_id, albums(title, is_published, media(url, type, order_index))').eq('uuid', uuid).single();
+                
                 if (!tag || !tag.album_id) {
-                    document.getElementById('albumTitle').innerText = "Vacio";
-                    document.getElementById('albumSubtitle').innerText = "Este souvenir no tiene contenido aún.";
+                    document.getElementById('albumTitle').innerText = "Vacío";
+                    document.getElementById('albumSubtitle').innerText = "Este recuerdo no tiene contenido o fue eliminado.";
                     return;
                 }
+                
                 albumId = tag.album_id;
 
-                // 2. Try to fetch album and media (May fail if protected/private)
-                const { data: album } = await supabase.from('albums').select('title, is_published, media(url, type, order_index)').eq('id', albumId).single();
-
-                if (album) {
+                if (tag.albums) {
+                    const album = tag.albums;
                     document.getElementById('albumTitle').innerText = album.title;
                     mediaItems = (album.media || []).sort((a,b) => a.order_index - b.order_index);
                     render();
                 } else {
-                    // Album exists but hidden by RLS -> Protected
+                    // Album is null because RLS blocked it, or it was deleted without unlinking.
                     showProtected();
                 }
             } catch (e) {
