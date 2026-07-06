@@ -20,8 +20,10 @@ function showToast(message, type = 'info') {
 
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
     if (sidebar) {
         sidebar.classList.toggle('open');
+        if (overlay) overlay.classList.toggle('active');
     }
 }
 
