@@ -354,6 +354,22 @@
                     </form>
                 </div>
             </section>
+
+            <!-- Inline Viewer View -->
+            <section id="view-viewer" class="view">
+                <header style="margin-bottom: 2rem;">
+                    <div>
+                        <h1 id="viewer-title">Cargando...</h1>
+                        <p class="subtitle" id="viewer-subtitle">TUS RECUERDOS</p>
+                    </div>
+                    <button class="btn-auth" id="btn-viewer-edit" style="width:auto; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;" onclick="editCurrentViewerAlbum()">
+                        <i data-lucide="edit-3" style="width: 18px; height: 18px;"></i> Ajustes del Álbum
+                    </button>
+                </header>
+                <div id="viewer-gallery" class="media-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px;">
+                    <!-- Gallery items injected here -->
+                </div>
+            </section>
         </main>
     </div>
 
@@ -584,10 +600,11 @@
                 forceOpenEditor(editId);
             }
 
-            let hash = window.location.hash || '#/home';
+            let rawHash = window.location.hash || '#/home';
+            let hash = rawHash.split('?')[0];
             
             // Fallback for unrecognized routes
-            const validRoutes = ['#/home', '#/albums', '#/requests', '#/settings', '#/reset-password'];
+            const validRoutes = ['#/home', '#/albums', '#/requests', '#/settings', '#/reset-password', '#/viewer'];
             if (!validRoutes.includes(hash)) {
                 hash = '#/home';
                 window.location.hash = hash;
@@ -603,12 +620,23 @@
             const navId = 'nav-' + hash.replace('#/', '');
             const nav = document.getElementById(navId);
             if (nav) nav.classList.add('active');
+            
+            // Activate "Mis Recuerdos" nav item if in viewer
+            if (hash === '#/viewer') {
+                const albumsNav = document.getElementById('nav-albums');
+                if (albumsNav) albumsNav.classList.add('active');
+            }
 
             // Load data based on view
             if (hash === '#/home') loadDashboard();
             if (hash === '#/albums') loadAlbums();
             if (hash === '#/requests') loadRequests();
             if (hash === '#/settings') loadSettings();
+            if (hash === '#/viewer') {
+                const urlParams = new URLSearchParams(rawHash.split('?')[1] || '');
+                const uuid = urlParams.get('id');
+                if (uuid) loadViewerData(uuid);
+            }
 
             // Mobile: close sidebar on route
             document.getElementById('sidebar').classList.remove('open');
@@ -822,8 +850,8 @@
                 if (a.is_private) { sClass = 'status-private'; sText = 'Privado'; } else if (a.is_published) { sClass = 'status-public'; sText = 'Público'; }
                 let albumUuid = a.tags && a.tags.length > 0 ? a.tags[0].uuid : '';
                 
-                // If it has a UUID, clicking goes to the viewer. If not (unlinked album), opens editor directly.
-                const clickAction = albumUuid ? `window.location.href='/souvenir-config/m/${albumUuid}'` : `openAlbumEditor('${a.id}', '${a.title.replace(/'/g, "\\'")}', ${a.is_private}, ${a.is_published}, '${albumUuid}', '${a.category_id || ''}', ${a.use_category_style || false})`;
+                // Clicking goes to the inline viewer. If not (unlinked album), opens editor directly.
+                const clickAction = albumUuid ? `window.location.hash='#/viewer?id=${albumUuid}'` : `openAlbumEditor('${a.id}', '${a.title.replace(/'/g, "\\'")}', ${a.is_private}, ${a.is_published}, '${albumUuid}', '${a.category_id || ''}', ${a.use_category_style || false})`;
 
                 return `
                     <div class="album-card" onclick="${clickAction}">
@@ -1276,6 +1304,92 @@
                 }, 1500);
             }
         });
+
+        // --- Inline Viewer Logic ---
+        let currentViewerAlbumObj = null;
+
+        async function loadViewerData(uuid) {
+            document.getElementById('viewer-title').innerText = "Cargando...";
+            document.getElementById('viewer-gallery').innerHTML = '<div class="spinner" style="grid-column: 1/-1; margin: 2rem auto;"></div>';
+            currentViewerAlbumObj = null;
+
+            try {
+                // Fetch the tag and its album media
+                const { data: tag, error } = await supabaseApp.from('tags')
+                    .select('album_id, albums(id, title, is_private, is_published, category_id, use_category_style, media(url, type, order_index))')
+                    .eq('uuid', uuid)
+                    .single();
+
+                if (error || !tag || !tag.albums) {
+                    document.getElementById('viewer-title').innerText = "Álbum no encontrado";
+                    document.getElementById('viewer-gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--text-muted);">El álbum está vacío o ha sido eliminado.</p>';
+                    return;
+                }
+
+                const album = tag.albums;
+                // Attach the UUID to the album object so edit can use it
+                album.uuid = uuid;
+                currentViewerAlbumObj = album;
+                
+                document.getElementById('viewer-title').innerText = album.title;
+                
+                const mediaItems = (album.media || []).sort((a,b) => a.order_index - b.order_index);
+
+                Fancybox.bind("[data-fancybox='inline-gallery']", {
+                    Images: { initialSize: "fit" },
+                    Toolbar: { display: { left: [], middle: ["infobar"], right: ["close"] } }
+                });
+
+                if (mediaItems.length === 0) {
+                    document.getElementById('viewer-gallery').innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 3rem 1rem;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                            <p style="color:var(--text-muted); margin-bottom: 1.5rem;">Este álbum no tiene ninguna foto o video aún.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const galleryHtml = mediaItems.map((item, i) => {
+                    const delay = i * 0.04;
+                    if (item.type === 'video') {
+                        return `
+                            <a class="media-item" href="${item.url}" data-fancybox="inline-gallery" data-type="video" style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block; position:relative;">
+                                <video src="${item.url}#t=0.5" muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+                                <div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; font-size:0.7rem;"><i data-lucide="video" style="width:12px; height:12px;"></i></div>
+                            </a>
+                        `;
+                    } else {
+                        return `
+                            <a class="media-item" href="${item.url}" data-fancybox="inline-gallery" style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block;">
+                                <img src="${item.url}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                            </a>
+                        `;
+                    }
+                }).join('');
+
+                document.getElementById('viewer-gallery').innerHTML = galleryHtml;
+                lucide.createIcons();
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('viewer-gallery').innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--danger);">Error al cargar el álbum.</p>';
+            }
+        }
+
+        function editCurrentViewerAlbum() {
+            if (currentViewerAlbumObj) {
+                openAlbumEditor(
+                    currentViewerAlbumObj.id, 
+                    currentViewerAlbumObj.title.replace(/'/g, "\\'"), 
+                    currentViewerAlbumObj.is_private, 
+                    currentViewerAlbumObj.is_published, 
+                    currentViewerAlbumObj.uuid, 
+                    currentViewerAlbumObj.category_id || '', 
+                    currentViewerAlbumObj.use_category_style || false
+                );
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
