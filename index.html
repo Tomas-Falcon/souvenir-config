@@ -294,7 +294,7 @@
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-label">Álbumes Activos</div><div class="stat-value" id="stat-albums">0</div></div>
                     <div class="stat-card"><div class="stat-label">Total Escaneos</div><div class="stat-value" id="stat-scans">0</div></div>
-                    <div class="stat-card"><div class="stat-label">Media Guardada</div><div class="stat-value" id="stat-media">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Archivos Guardados</div><div class="stat-value" id="stat-media">0</div></div>
                 </div>
                 <h3>Actividad Reciente</h3>
                 <div id="recent-activity-list" class="recent-activity" style="margin-top:1.5rem;">
@@ -845,7 +845,7 @@
         }
 
         async function loadDashboard() {
-            const { data: albums } = await supabaseApp.from('albums').select('id, last_scanned_at').eq('user_id', user.id);
+            const { data: albums } = await supabaseApp.from('albums').select('id, last_scanned_at, scan_count').eq('user_id', user.id);
             if (!albums) return;
             
             if (albums.length === 0) {
@@ -861,8 +861,8 @@
             document.getElementById('stat-albums').innerText = albums.length;
             document.getElementById('stat-media').innerText = mediaCount || 0;
             
-            const scans = albums.filter(a => a.last_scanned_at).length;
-            document.getElementById('stat-scans').innerText = scans;
+            const totalScans = albums.reduce((sum, a) => sum + (a.scan_count || 0), 0);
+            document.getElementById('stat-scans').innerText = totalScans;
 
             // Recent activity
             const recent = albums.filter(a => a.last_scanned_at).sort((a,b) => new Date(b.last_scanned_at) - new Date(a.last_scanned_at)).slice(0, 5);
@@ -941,6 +941,7 @@
                     <div class="activity-icon" style="background:rgba(168, 85, 247, 0.2); color:var(--accent);"><i data-lucide="user-plus"></i></div>
                     <div style="flex:1;">
                         <div style="font-weight:600;">Solicitud de Acceso</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted)">De: <b>${r.email || 'Anónimo'}</b></div>
                         <div style="font-size:0.8rem; color:var(--text-muted)">Para el álbum: <b>${r.albums.title}</b></div>
                     </div>
                     <div style="display:flex; gap:10px;">

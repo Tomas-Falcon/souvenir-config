@@ -336,7 +336,7 @@
             try {
                 const { data: tag } = await supabaseClient
                     .from('tags')
-                    .select('album_id, albums(title, user_id, use_category_style, categories(style_json), media(url, type, order_index))')
+                    .select('album_id, albums(title, user_id, use_category_style, scan_count, categories(style_json), media(url, type, order_index))')
                     .eq('uuid', uuid).single();
 
                 if (!tag || !tag.album_id) {
@@ -353,7 +353,10 @@
                     
                     // Register the scan silently
                     supabaseClient.from('albums')
-                        .update({ last_scanned_at: new Date().toISOString() })
+                        .update({ 
+                            last_scanned_at: new Date().toISOString(),
+                            scan_count: (album.scan_count || 0) + 1
+                        })
                         .eq('id', tag.album_id)
                         .then(() => console.log("Scan logged"))
                         .catch(e => console.error("Could not log scan:", e));

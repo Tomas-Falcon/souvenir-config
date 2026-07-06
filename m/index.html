@@ -193,7 +193,7 @@
 
             try {
                 // Consulta unificada como en 404.html
-                const { data: tag } = await supabase.from('tags').select('album_id, albums(title, user_id, is_published, media(url, type, order_index))').eq('uuid', uuid).single();
+                const { data: tag } = await supabase.from('tags').select('album_id, albums(title, user_id, is_published, scan_count, media(url, type, order_index))').eq('uuid', uuid).single();
                 
                 if (!tag || !tag.album_id) {
                     document.getElementById('albumTitle').innerText = "Vacío";
@@ -208,8 +208,11 @@
                     album = tag.albums;
                     
                     // Register the scan silently
-                    supabaseClient.from('albums')
-                        .update({ last_scanned_at: new Date().toISOString() })
+                    supabase.from('albums')
+                        .update({ 
+                            last_scanned_at: new Date().toISOString(),
+                            scan_count: (album.scan_count || 0) + 1
+                        })
                         .eq('id', tag.album_id)
                         .then(() => console.log("Scan logged"))
                         .catch(e => console.error("Could not log scan:", e));
