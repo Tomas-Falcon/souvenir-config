@@ -157,6 +157,9 @@
             border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 550px;
             max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column;
         }
+        @media (max-width: 768px) {
+            .modal-content { padding: 1.5rem; border-radius: var(--radius-md); }
+        }
 
         /* --- Modal Tabs --- */
         .modal-tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
@@ -202,6 +205,13 @@
         .toast.show { transform: translateX(0); }
         .toast.error { border-left-color: var(--danger); }
         .toast.success { border-left-color: var(--success); }
+
+        /* Generic Buttons */
+        .btn { padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; border: none; text-align: center; }
+        .btn-outline-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-outline-danger:hover { background: rgba(239, 68, 68, 0.1); }
+        .btn-outline-primary { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-outline-primary:hover { background: rgba(255,255,255,0.05); }
 
         /* Button loading state */
         .btn-auth:disabled { opacity: 0.7; cursor: not-allowed; }
@@ -432,20 +442,20 @@
                 </div>
 
                 <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem; text-transform:uppercase;">Categoría</label>
-                <div class="form-group" style="margin-bottom:1.5rem;">
-                    <select id="edit-category" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:0.8rem; color:white; margin-bottom:0.5rem;">
+                <div class="form-group" style="margin-bottom:2rem;">
+                    <select id="edit-category" style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:0.8rem; color:white; margin-bottom:0.8rem;">
                         <option value="">Ninguna (Estilo Estándar)</option>
                     </select>
-                    <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; cursor:pointer;">
-                        <input type="checkbox" id="edit-use-style">
-                        Usar estilo de categoría
+                    <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.9rem; cursor:pointer; color:var(--text-muted);">
+                        <input type="checkbox" id="edit-use-style" style="width:16px; height:16px; accent-color: var(--primary); cursor:pointer;">
+                        Usar estilo visual asociado a esta categoría
                     </label>
                 </div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-                    <button class="nav-item" style="justify-content:center; border:1px solid var(--danger); color:var(--danger);" onclick="deleteAlbum()">Eliminar</button>
-                    <button class="nav-item" style="justify-content:center; border:1px solid var(--primary); color:white;" onclick="viewPublicAlbum()">Ver Álbum</button>
-                    <button class="btn-auth" style="padding: 0.8rem;" onclick="saveAlbumSettings()">Guardar</button>
+                    <button class="btn btn-outline-danger" onclick="deleteAlbum()">Eliminar</button>
+                    <button class="btn btn-outline-primary" onclick="viewPublicAlbum()">Ver Álbum</button>
+                    <button class="btn btn-auth" onclick="saveAlbumSettings()">Guardar</button>
                 </div>
             </div>
 
