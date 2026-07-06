@@ -952,7 +952,12 @@
             else { showToast('Ajustes guardados', 'success'); closeModal(); loadAlbums(); }
         }
 
-        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
+        function closeModal() { 
+            document.getElementById('edit-modal').style.display = 'none'; 
+            if (window.location.hash.startsWith('#/viewer') && currentViewerAlbumObj) {
+                loadViewerData(currentViewerAlbumObj.uuid);
+            }
+        }
 
         function switchModalTab(tabId) {
             document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
@@ -1356,7 +1361,7 @@
                     const delay = i * 0.04;
                     if (item.type === 'video') {
                         return `
-                            <a class="media-item" href="${item.url}" data-fancybox="inline-gallery" data-type="video" style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block; position:relative;">
+                            <a class="media-item" href="${item.url}" data-fancybox="inline-gallery" data-type="html5video" style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block; position:relative;">
                                 <video src="${item.url}#t=0.5" muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>
                                 <div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; font-size:0.7rem;"><i data-lucide="video" style="width:12px; height:12px;"></i></div>
                             </a>

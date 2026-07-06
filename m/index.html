@@ -268,7 +268,7 @@
 
                 if (item.type === 'video') {
                     // Fancybox handles video natively if we add data-type
-                    el.setAttribute('data-type', 'video');
+                    el.setAttribute('data-type', 'html5video');
                     const v = document.createElement('video');
                     v.src = item.url + "#t=0.5";
                     v.muted = true; v.playsInline = true;
