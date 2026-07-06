@@ -161,21 +161,6 @@
             .modal-content { padding: 1.5rem; border-radius: var(--radius-md); }
         }
 
-        /* --- Modal Tabs --- */
-        .modal-tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
-        .modal-tab { color: var(--text-muted); cursor: pointer; font-weight: 600; padding-bottom: 0.5rem; border-bottom: 2px solid transparent; transition: var(--transition); }
-        .modal-tab.active { color: white; border-color: var(--primary); }
-        .modal-tab-content { display: none; flex-direction: column; }
-        .modal-tab-content.active { display: flex; }
-
-        /* --- Media Upload --- */
-        .upload-area {
-            border: 2px dashed rgba(255,255,255,0.2); border-radius: var(--radius-md); padding: 2rem;
-            text-align: center; color: var(--text-muted); cursor: pointer; transition: var(--transition);
-            margin-bottom: 1.5rem;
-        }
-        .upload-area:hover { border-color: var(--primary); background: rgba(99, 102, 241, 0.05); }
-        .upload-area input[type="file"] { display: none; }
         .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
         .media-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #000; }
         .media-item img, .media-item video { width: 100%; height: 100%; object-fit: cover; }
@@ -207,6 +192,23 @@
         .loader-full { position: fixed; inset: 0; background: var(--bg-dark); z-index: 3000; display: flex; align-items: center; justify-content: center; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(99, 102, 241, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Wiggle Animation for Edit Mode */
+        @keyframes wiggle {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-1.5deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(1.5deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .media-item.wiggle { animation: wiggle 0.35s infinite; cursor: grab; }
+        .media-item.wiggle:active { cursor: grabbing; }
+        
+        /* Edit Mode Overlays */
+        .media-item .delete-media, .media-item .cover-media { display: none; }
+        .media-item.wiggle .delete-media, .media-item.wiggle .cover-media { display: flex; }
+        .cover-media.is-cover { color: #fbbf24 !important; }
+
 
         /* --- Toast Notifications --- */
         #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
@@ -391,15 +393,28 @@
 
             <!-- Inline Viewer View -->
             <section id="view-viewer" class="view">
-                <header style="margin-bottom: 2rem;">
+                <header style="margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
                     <div>
                         <h1 id="viewer-title">Cargando...</h1>
                         <p class="subtitle" id="viewer-subtitle">TUS RECUERDOS</p>
                     </div>
-                    <button class="btn-auth" id="btn-viewer-edit" style="width:auto; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;" onclick="editCurrentViewerAlbum()">
-                        <i data-lucide="edit-3" style="width: 18px; height: 18px;"></i> Ajustes del Álbum
-                    </button>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; width:100%;">
+                        <input type="file" id="media-upload-input" multiple accept="image/*,video/mp4" style="display:none;">
+                        <button class="btn-auth" id="btn-viewer-upload" style="width:auto; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;" onclick="document.getElementById('media-upload-input').click()">
+                            <i data-lucide="upload" style="width: 18px; height: 18px;"></i> Añadir
+                        </button>
+                        <button class="btn-auth" id="btn-viewer-organize" style="width:auto; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; border: 1px solid var(--primary); color: white;" onclick="toggleOrganizeMode()">
+                            <i data-lucide="move" style="width: 18px; height: 18px;"></i> Organizar
+                        </button>
+                        <button class="btn-auth" id="btn-viewer-edit" style="width:auto; padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white;" onclick="editCurrentViewerAlbum()">
+                            <i data-lucide="settings" style="width: 18px; height: 18px;"></i> Ajustes
+                        </button>
+                    </div>
                 </header>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <label id="viewer-organize-hint" style="font-size:0.8rem; font-weight:600; color:var(--primary); text-transform:uppercase; display:none;">Modo Edición: Arrastra para ordenar</label>
+                    <div id="media-loader" class="spinner" style="width:20px; height:20px; border-width:2px; display:none;"></div>
+                </div>
                 <div id="viewer-gallery" class="media-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px;">
                     <!-- Gallery items injected here -->
                 </div>
@@ -446,14 +461,9 @@
                 <h3 id="modal-title">Ajustes del Álbum</h3>
                 <button onclick="closeModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
-            
-            <div class="modal-tabs">
-                <div class="modal-tab active" onclick="switchModalTab('general')" id="tab-general">General</div>
-                <div class="modal-tab" onclick="switchModalTab('media')" id="tab-media">Multimedia</div>
-            </div>
 
             <!-- TAB: GENERAL -->
-            <div id="content-general" class="modal-tab-content active">
+            <div id="content-general">
                 <div class="form-group"><label>Nombre del Álbum</label><input type="text" id="edit-title"></div>
                 
                 <label style="display:block; font-size:0.8rem; font-weight:600; color:var(--text-muted); margin-bottom:1rem; text-transform:uppercase;">Privacidad</label>
@@ -480,24 +490,7 @@
                     <button class="btn btn-auth" onclick="saveAlbumSettings()">Guardar</button>
                 </div>
             </div>
-
-            <!-- TAB: MULTIMEDIA -->
-            <div id="content-media" class="modal-tab-content">
-                <label class="upload-area" id="upload-dropzone">
-                    <i data-lucide="cloud-upload" style="width: 48px; height: 48px; margin-bottom: 0.5rem; color: var(--primary);"></i>
-                    <div style="font-weight: 600;">Haz clic o arrastra archivos aquí</div>
-                    <div style="font-size: 0.8rem; margin-top: 0.5rem;">Imágenes o Videos (MP4)</div>
-                    <input type="file" id="media-upload-input" multiple accept="image/*,video/mp4">
-                </label>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
-                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Archivos Subidos</label>
-                    <div id="media-loader" class="spinner" style="width:20px; height:20px; border-width:2px; display:none;"></div>
-                </div>
-                <div id="media-preview-grid" class="media-grid">
-                    <!-- Media items will be injected here -->
-                </div>
-            </div>
+        </div>
         </div>
     </div>
 
@@ -990,9 +983,7 @@
             document.getElementById('edit-category').value = categoryId || '';
             document.getElementById('edit-use-style').checked = useStyle;
             setPrivacy(isPri ? 'private' : (isPub ? 'public' : 'protected'));
-            switchModalTab('general');
             document.getElementById('edit-modal').style.display = 'flex';
-            loadAlbumMedia();
         }
 
         async function saveAlbumSettings() {
@@ -1022,65 +1013,90 @@
                 loadViewerData(currentViewerAlbumObj.uuid);
             }
         }
+        let isOrganizeMode = false;
+        let sortableInstance = null;
 
-        function switchModalTab(tabId) {
-            document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            document.getElementById('content-' + tabId).classList.add('active');
-            lucide.createIcons();
-        }
-
-        async function loadAlbumMedia() {
-            const grid = document.getElementById('media-preview-grid');
-            const loader = document.getElementById('media-loader');
-            if(!grid || !loader) return;
-            loader.style.display = 'block';
-            grid.innerHTML = '';
+        function toggleOrganizeMode(forceState = null) {
+            isOrganizeMode = forceState !== null ? forceState : !isOrganizeMode;
             
-            const { data: mediaItems, error } = await supabaseApp.from('media').select('*').eq('album_id', currentAlbum).order('order_index', { ascending: true });
-            loader.style.display = 'none';
+            const btn = document.getElementById('btn-viewer-organize');
+            const hint = document.getElementById('viewer-organize-hint');
+            const grid = document.getElementById('viewer-gallery');
+            const items = grid.querySelectorAll('.media-item');
             
-            if (error) { showToast('Error cargando multimedia', 'error'); return; }
-            if (mediaItems.length === 0) {
-                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-muted); font-size:0.8rem; padding:1rem;">No hay archivos multimedia subidos.</div>';
-                return;
-            }
-            
-            grid.innerHTML = mediaItems.map(m => `
-                <div class="media-item" data-id="${m.id}" data-url="${m.url}">
-                    ${m.type === 'video' ? `<video src="${m.url}#t=0.1" muted></video>` : `<img src="${m.url}">`}
-                    <button class="delete-media" onclick="deleteMedia('${m.id}', '${m.url}')" title="Eliminar"><i data-lucide="x" style="width: 16px; height: 16px;"></i></button>
-                    ${m.type === 'image' ? `<button class="cover-media" onclick="setCoverUrl('${m.url}')" title="Usar como Portada"><i data-lucide="star" style="width: 16px; height: 16px;"></i></button>` : ''}
-                </div>
-            `).join('');
-            
-            lucide.createIcons();
-            
-            // Initialize Sortable
-            Sortable.create(grid, {
-                animation: 150,
-                onEnd: async function (evt) {
-                    const items = Array.from(grid.children);
-                    const updates = items.map((el, index) => ({
-                        id: el.getAttribute('data-id'),
-                        order_index: index,
-                        album_id: currentAlbum // Required for upsert if PK is id
-                    }));
-                    
-                    const { error } = await supabaseApp.from('media').upsert(updates, { onConflict: 'id' });
-                    if (error) showToast('Error al reordenar', 'error');
+            if (isOrganizeMode) {
+                btn.style.background = 'var(--primary)';
+                btn.style.borderColor = 'var(--primary)';
+                btn.innerHTML = '<i data-lucide="check" style="width: 18px; height: 18px;"></i> Listo';
+                hint.style.display = 'block';
+                
+                items.forEach(item => {
+                    item.classList.add('wiggle');
+                    // Deshabilitar Fancybox mientras organizamos
+                    item.removeAttribute('data-fancybox');
+                });
+                
+                if (!sortableInstance) {
+                    sortableInstance = Sortable.create(grid, {
+                        animation: 150,
+                        delay: 100, // Previene clicks accidentales
+                        delayOnTouchOnly: true,
+                        onEnd: async function (evt) {
+                            if (!currentViewerAlbumObj) return;
+                            const gridItems = Array.from(grid.children);
+                            
+                            showToast('Guardando orden...', 'success');
+                            const loader = document.getElementById('media-loader');
+                            loader.style.display = 'block';
+                            
+                            try {
+                                const promises = gridItems.map((el, index) => {
+                                    const id = el.getAttribute('data-id');
+                                    return supabaseApp.from('media').update({ order_index: index }).eq('id', id);
+                                });
+                                await Promise.all(promises);
+                                loader.style.display = 'none';
+                            } catch (e) {
+                                showToast('Error al reordenar', 'error');
+                                loader.style.display = 'none';
+                            }
+                        }
+                    });
+                } else {
+                    sortableInstance.option("disabled", false);
                 }
-            });
+            } else {
+                btn.style.background = 'transparent';
+                btn.style.borderColor = 'var(--primary)';
+                btn.innerHTML = '<i data-lucide="move" style="width: 18px; height: 18px;"></i> Organizar';
+                hint.style.display = 'none';
+                
+                items.forEach(item => {
+                    item.classList.remove('wiggle');
+                    item.setAttribute('data-fancybox', 'inline-gallery');
+                });
+                
+                if (sortableInstance) {
+                    sortableInstance.option("disabled", true);
+                }
+            }
+            lucide.createIcons();
         }
 
-        async function setCoverUrl(url) {
+        async function setCoverImage(url) {
+            if (!currentViewerAlbumObj) return;
             const loader = document.getElementById('media-loader');
             loader.style.display = 'block';
-            const { error } = await supabaseApp.from('albums').update({ cover_url: url }).eq('id', currentAlbum);
+            
+            const { error } = await supabaseApp.from('albums').update({ cover_url: url }).eq('id', currentViewerAlbumObj.id);
+            
             loader.style.display = 'none';
             if (error) showToast('Error al actualizar portada', 'error');
-            else { showToast('Portada actualizada', 'success'); loadAlbums(); }
+            else { 
+                showToast('Portada actualizada', 'success'); 
+                await loadViewerData(currentViewerAlbumObj.uuid);
+                if (isOrganizeMode) toggleOrganizeMode(true);
+            }
         }
 
         function viewPublicAlbum() {
@@ -1110,17 +1126,18 @@
             
             try {
                 // Extraer el path correcto para Supabase Storage
-                // Ejemplo de url: https://xxx.supabase.co/storage/v1/object/public/souvenir-media/albumId/UUID.png
                 const pathParts = url.split('/souvenir-media/');
                 if (pathParts.length > 1) {
                     const path = pathParts[1];
                     await supabaseApp.storage.from('souvenir-media').remove([path]);
                 }
                 
-                // Remover de base de datos
                 await supabaseApp.from('media').delete().eq('id', mediaId);
                 showToast('Archivo eliminado', 'success');
-                loadAlbumMedia();
+                if (currentViewerAlbumObj) {
+                    await loadViewerData(currentViewerAlbumObj.uuid);
+                    if (isOrganizeMode) toggleOrganizeMode(true); // Maintain mode if it was active
+                }
             } catch (e) {
                 showToast('Error al eliminar', 'error');
                 loader.style.display = 'none';
@@ -1132,19 +1149,21 @@
         if (uploadInput) {
             uploadInput.addEventListener('change', async (e) => {
                 const files = e.target.files;
-                if (!files || files.length === 0) return;
+                if (!files || files.length === 0 || !currentViewerAlbumObj) return;
                 
                 const loader = document.getElementById('media-loader');
                 loader.style.display = 'block';
                 
+                const albumId = currentViewerAlbumObj.id;
+                
                 // Obtener el order_index actual
-                const { data: existing } = await supabaseApp.from('media').select('order_index').eq('album_id', currentAlbum).order('order_index', { ascending: false }).limit(1);
+                const { data: existing } = await supabaseApp.from('media').select('order_index').eq('album_id', albumId).order('order_index', { ascending: false }).limit(1);
                 let nextIndex = existing && existing.length > 0 ? existing[0].order_index + 1 : 0;
 
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     const fileExt = file.name.split('.').pop();
-                    const fileName = `${currentAlbum}/${crypto.randomUUID()}.${fileExt}`;
+                    const fileName = `${albumId}/${crypto.randomUUID()}.${fileExt}`;
                     const fileType = file.type.startsWith('video') ? 'video' : 'image';
                     
                     showToast(`Subiendo ${i+1} de ${files.length}...`);
@@ -1156,7 +1175,7 @@
                     const publicUrl = publicUrlData.publicUrl;
                     
                     await supabaseApp.from('media').insert({
-                        album_id: currentAlbum,
+                        album_id: albumId,
                         url: publicUrl,
                         type: fileType,
                         order_index: nextIndex++
@@ -1165,7 +1184,7 @@
                 
                 uploadInput.value = ''; // Limpiar input
                 showToast('Subida completada', 'success');
-                loadAlbumMedia();
+                await loadViewerData(currentViewerAlbumObj.uuid);
                 loadDashboard(); // Actualizar contador de archivos
             });
         }
@@ -1387,7 +1406,7 @@
             try {
                 // Fetch the tag and its album media
                 const { data: tag, error } = await supabaseApp.from('tags')
-                    .select('album_id, albums(id, title, is_private, is_published, category_id, use_category_style, media(url, type, order_index))')
+                    .select('album_id, albums(id, title, is_private, is_published, category_id, use_category_style, cover_url, media(id, url, type, order_index))')
                     .eq('uuid', uuid)
                     .single();
 
@@ -1423,20 +1442,28 @@
 
                 const galleryHtml = mediaItems.map((item, i) => {
                     const delay = i * 0.04;
+                    const isCover = item.url === album.cover_url;
+                    const coverClass = isCover ? 'is-cover' : '';
+                    
+                    let innerHtml = '';
                     if (item.type === 'video') {
-                        return `
-                            <a class="media-item" href="${item.url}" data-fancybox="inline-gallery" data-type="html5video" style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block; position:relative;">
-                                <video src="${item.url}#t=0.5" muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>
-                                <div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; font-size:0.7rem;"><i data-lucide="video" style="width:12px; height:12px;"></i></div>
-                            </a>
+                        innerHtml = `
+                            <video src="${item.url}#t=0.5" muted playsinline style="width:100%; height:100%; object-fit:cover; pointer-events:none;"></video>
+                            <div style="position:absolute; top:5px; right:5px; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; font-size:0.7rem;"><i data-lucide="video" style="width:12px; height:12px;"></i></div>
                         `;
                     } else {
-                        return `
-                            <a class="media-item" href="${item.url}" data-fancybox="inline-gallery" style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block;">
-                                <img src="${item.url}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
-                            </a>
+                        innerHtml = `
+                            <img src="${item.url}" loading="lazy" style="width:100%; height:100%; object-fit:cover; pointer-events:none;">
                         `;
                     }
+
+                    return `
+                        <a class="media-item" data-id="${item.id}" data-url="${item.url}" href="${item.url}" data-fancybox="inline-gallery" ${item.type === 'video' ? 'data-type="html5video"' : ''} style="animation: fadeIn 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; aspect-ratio: 1; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.05); display:block; position:relative;">
+                            ${innerHtml}
+                            <button class="cover-media ${coverClass}" onclick="event.preventDefault(); event.stopPropagation(); setCoverImage('${item.url}')"><i data-lucide="star" style="width:14px; height:14px; ${isCover ? 'fill:currentColor;' : ''}"></i></button>
+                            <button class="delete-media" onclick="event.preventDefault(); event.stopPropagation(); deleteMedia('${item.id}', '${item.url}')"><i data-lucide="x" style="width:14px; height:14px;"></i></button>
+                        </a>
+                    `;
                 }).join('');
 
                 document.getElementById('viewer-gallery').innerHTML = galleryHtml;
