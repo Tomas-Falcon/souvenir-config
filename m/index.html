@@ -234,7 +234,7 @@
                     if (album && session.user && album.user_id === session.user.id) {
                         const editBtn = document.getElementById('nav-edit-btn');
                         editBtn.style.display = 'flex';
-                        editBtn.href = `/souvenir-config/#/home?edit=${tag.album_id}`;
+                        editBtn.href = `/souvenir-config/#/viewer?id=${uuid}`;
                     }
                     if (isPublic) {
                         render();
