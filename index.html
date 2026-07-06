@@ -573,6 +573,17 @@
         }
 
         function route() {
+            // Check for edit parameter before standard routing
+            const urlParams = new URLSearchParams(window.location.search);
+            const editId = urlParams.get('edit');
+            if (editId) {
+                // Clear the parameter from URL to prevent reopening on reload
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.hash;
+                window.history.replaceState({path:newUrl}, '', newUrl);
+                // Try to load the album to open editor
+                forceOpenEditor(editId);
+            }
+
             let hash = window.location.hash || '#/home';
             
             // Fallback for unrecognized routes
@@ -785,6 +796,15 @@
             lucide.createIcons();
         }
 
+        async function forceOpenEditor(albumId) {
+            // Fetch album details to open the modal correctly
+            const { data: a } = await supabaseApp.from('albums').select('*, tags(uuid)').eq('id', albumId).single();
+            if (a) {
+                let albumUuid = a.tags && a.tags.length > 0 ? a.tags[0].uuid : '';
+                openAlbumEditor(a.id, a.title, a.is_private, a.is_published, albumUuid, a.category_id || '', a.use_category_style || false);
+            }
+        }
+
         async function loadAlbums() {
             const container = document.getElementById('albums-container');
             container.innerHTML = '<div class="spinner" style="grid-column: 1/-1; margin: 2rem auto;"></div>';
@@ -801,8 +821,12 @@
                 let sClass = 'status-protected'; let sText = 'Protegido';
                 if (a.is_private) { sClass = 'status-private'; sText = 'Privado'; } else if (a.is_published) { sClass = 'status-public'; sText = 'Público'; }
                 let albumUuid = a.tags && a.tags.length > 0 ? a.tags[0].uuid : '';
+                
+                // If it has a UUID, clicking goes to the viewer. If not (unlinked album), opens editor directly.
+                const clickAction = albumUuid ? `window.location.href='/souvenir-config/m/${albumUuid}'` : `openAlbumEditor('${a.id}', '${a.title.replace(/'/g, "\\'")}', ${a.is_private}, ${a.is_published}, '${albumUuid}', '${a.category_id || ''}', ${a.use_category_style || false})`;
+
                 return `
-                    <div class="album-card" onclick="openAlbumEditor('${a.id}', '${a.title}', ${a.is_private}, ${a.is_published}, '${albumUuid}', '${a.category_id || ''}', ${a.use_category_style || false})">
+                    <div class="album-card" onclick="${clickAction}">
                         <img src="${a.cover_url || 'https://via.placeholder.com/400x225/11131a/ffffff?text=Sin+Portada'}" class="album-img">
                         <div class="album-info">
                             <div class="album-title">${a.title}</div>

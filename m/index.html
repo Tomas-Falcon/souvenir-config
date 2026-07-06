@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --bg-dark: #0B0F19;
@@ -47,7 +48,38 @@
         h1 { font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 6vw, 2.8rem); font-weight: 900; letter-spacing: -0.04em; margin-bottom: 0.5rem; }
         .subtitle { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 0.25em; text-transform: uppercase; font-weight: 600; }
 
-        .gallery-wrapper { max-width: 1400px; width: 100%; margin: 0 auto; padding: 0 1rem 5rem; }
+        .gallery-wrapper { max-width: 1400px; width: 100%; margin: 0 auto; padding: 0 1rem 7rem; }
+        
+        /* --- Mobile Navigation --- */
+        .mobile-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: rgba(11, 15, 25, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-around; padding: 0.8rem 0.5rem;
+            padding-bottom: calc(0.8rem + env(safe-area-inset-bottom));
+            z-index: 100;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: var(--text-muted); text-decoration: none; font-size: 0.7rem; gap: 4px;
+            padding: 0.5rem; border-radius: var(--radius-md); transition: var(--transition);
+            flex: 1; cursor: pointer;
+        }
+        .nav-item i { width: 20px; height: 20px; }
+        .nav-item:hover, .nav-item.active { color: var(--primary); }
+
+        /* Media queries for PC island layout */
+        @media (min-width: 768px) {
+            .mobile-nav {
+                width: 400px;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 20px;
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 20px;
+                padding-bottom: 0.8rem;
+            }
+        }
         .gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         @media (min-width: 768px) { .gallery { grid-template-columns: repeat(4, 1fr); gap: 20px; } }
 
@@ -128,6 +160,22 @@
                 <button id="wg-guest" onclick="closeWelcomeGate()" style="display:none; background:transparent; color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer; width: 100%;">Ver como invitado</button>
             </div>
         </div>
+
+        <!-- Global Navigation -->
+        <nav class="mobile-nav" id="global-nav">
+            <a href="/souvenir-config/#/home" class="nav-item">
+                <i data-lucide="home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="#" id="nav-edit-btn" class="nav-item" style="display:none; color:var(--primary);">
+                <i data-lucide="edit-3"></i>
+                <span>Gestionar</span>
+            </a>
+            <a href="/souvenir-config/#/settings" class="nav-item">
+                <i data-lucide="settings"></i>
+                <span>Ajustes</span>
+            </a>
+        </nav>
     </main>
 
     <script>
@@ -176,6 +224,7 @@
                 if (!session) {
                     // Show Welcome Gate
                     document.getElementById('welcome-gate').style.display = 'flex';
+                    document.getElementById('global-nav').style.display = 'none'; // Hide nav on welcome gate
                     if (isPublic) {
                         document.getElementById('wg-guest').style.display = 'block';
                         document.getElementById('welcome-subtitle').innerText = "Inicia sesión o continúa como invitado para ver el álbum público.";
@@ -184,6 +233,12 @@
                         document.getElementById('welcome-subtitle').innerText = "Este álbum está protegido. Debes iniciar sesión o registrarte.";
                     }
                 } else {
+                    document.getElementById('global-nav').style.display = 'flex';
+                    if (album && session.user && album.user_id === session.user.id) {
+                        const editBtn = document.getElementById('nav-edit-btn');
+                        editBtn.style.display = 'flex';
+                        editBtn.href = `/souvenir-config/#/home?edit=${tag.album_id}`;
+                    }
                     if (isPublic) {
                         render();
                     } else {
@@ -194,6 +249,7 @@
                 console.error(e);
             } finally {
                 document.getElementById('loader').style.display = 'none';
+                lucide.createIcons();
             }
         }
 
@@ -311,6 +367,7 @@
 
         function closeWelcomeGate() {
             document.getElementById('welcome-gate').style.display = 'none';
+            document.getElementById('global-nav').style.display = 'flex';
             render();
         }
 
