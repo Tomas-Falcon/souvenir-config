@@ -458,7 +458,14 @@
             btn.disabled = true;
             btn.innerText = "Enviando...";
             
-            const { error } = await supabaseClient.from('pending_requests').insert({ album_id: window.albumId, status: 'pending' });
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            const email = session?.user?.email || null;
+
+            const { error } = await supabaseClient.from('pending_requests').insert({ 
+                album_id: window.albumId, 
+                email: email,
+                status: 'pending' 
+            });
             
             if (error) {
                 Swal.fire({title: 'Error', text: error.message, icon: 'error', background: 'var(--bg-dark)', color: 'white'});
