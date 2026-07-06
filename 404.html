@@ -251,6 +251,27 @@
         </div>
 
         <div id="gallery" class="gallery"></div>
+
+        <!-- Protected View -->
+        <div id="protected-view" style="display:none; text-align:center; padding: 3rem 1.5rem; background: var(--card-bg); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top:2rem;">
+            <div style="font-size:3rem; margin-bottom:1rem;">🛡️</div>
+            <h2 style="font-family:'Outfit', sans-serif; margin-bottom:0.5rem;">Álbum Privado / Protegido</h2>
+            <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">El propietario ha restringido el acceso. Puedes solicitar permiso para verlo o iniciar sesión si es tuyo.</p>
+            <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center;">
+                <button id="btn-request" onclick="requestAccess()" style="background:var(--primary); color:white; border:none; padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer; width: 100%; max-width: 250px;">Solicitar Acceso</button>
+                <button onclick="showLogin()" style="background:transparent; color:var(--text-muted); border:1px solid rgba(255,255,255,0.1); padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer; width: 100%; max-width: 250px;">Soy el propietario</button>
+            </div>
+            <div id="request-status" style="display:none; color:var(--success); font-weight:500; margin-top:1rem;">✅ Solicitud enviada</div>
+        </div>
+
+        <!-- Login View -->
+        <div id="login-view" style="display:none; text-align:center; padding: 2rem 1.5rem; background: var(--card-bg); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); margin-top:2rem;">
+            <h2 style="font-family:'Outfit', sans-serif; margin-bottom:1rem;">Iniciar Sesión</h2>
+            <input type="email" id="login-email" placeholder="Correo electrónico" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; margin-bottom: 1rem; box-sizing: border-box;">
+            <input type="password" id="login-password" placeholder="Contraseña" style="width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; margin-bottom: 1.5rem; box-sizing: border-box;">
+            <button onclick="loginAsOwner()" style="background:var(--primary); color:white; border:none; padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer; width: 100%;">Entrar</button>
+            <button onclick="hideLogin()" style="background:transparent; color:var(--text-muted); border:none; padding:0.8rem 1.5rem; border-radius:8px; font-weight:600; cursor:pointer; width: 100%; margin-top: 0.5rem;">Cancelar</button>
+        </div>
     </main>
 
     <script>
@@ -264,15 +285,25 @@
             const uuid = window.location.pathname.split('/').pop();
             if (!uuid || uuid.length < 30) return;
 
+            // Wait for session to be restored from localStorage
+            await supabaseClient.auth.getSession();
+
             try {
                 const { data: tag } = await supabaseClient
                     .from('tags')
                     .select('album_id, albums(title, user_id, use_category_style, categories(style_json), media(url, type, order_index))')
                     .eq('uuid', uuid).single();
 
-                if (!tag || !tag.albums) {
-                    document.getElementById('albumTitle').innerText = "Recuerdo No Disponible";
-                    document.getElementById('albumSubtitle').innerText = "Este recuerdo es privado o ha sido eliminado.";
+                if (!tag || !tag.album_id) {
+                    document.getElementById('albumTitle').innerText = "Vacío";
+                    document.getElementById('albumSubtitle').innerText = "Este recuerdo no tiene contenido o fue eliminado.";
+                    return;
+                }
+                
+                window.albumId = tag.album_id;
+
+                if (!tag.albums) {
+                    showProtected();
                     return;
                 }
 
@@ -336,11 +367,58 @@
             });
         }
 
+        function showProtected() {
+            document.getElementById('gallery').style.display = 'none';
+            document.getElementById('protected-view').style.display = 'block';
+        }
 
+        async function requestAccess() {
+            const btn = document.getElementById('btn-request');
+            btn.disabled = true;
+            btn.innerText = "Enviando...";
+            
+            const { error } = await supabaseClient.from('pending_requests').insert({ album_id: window.albumId, status: 'pending' });
+            
+            if (error) {
+                Swal.fire({title: 'Error', text: error.message, icon: 'error', background: 'var(--bg-dark)', color: 'white'});
+                btn.disabled = false;
+                btn.innerText = "Solicitar Acceso";
+            } else {
+                btn.style.display = 'none';
+                document.getElementById('request-status').style.display = 'block';
+            }
+        }
 
         function claimAlbum() {
             if (window.currentAlbumId) {
                 window.location.href = 'https://tomas-falcon.github.io/souvenir-config/?claim_album=' + window.currentAlbumId + '#/home';
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('protected-view').style.display = 'none';
+            document.getElementById('login-view').style.display = 'block';
+        }
+
+        function hideLogin() {
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('protected-view').style.display = 'block';
+        }
+
+        async function loginAsOwner() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            if (!email || !password) return;
+
+            document.getElementById('loader').style.display = 'block';
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                document.getElementById('loader').style.display = 'none';
+                Swal.fire({title: 'Error', text: error.message, icon: 'error', background: 'var(--bg-dark)', color: 'white'});
+            } else {
+                // Success, reload page to fetch album
+                window.location.reload();
             }
         }
 
