@@ -189,6 +189,7 @@
             // Wait for session to be restored from localStorage
             const { data: { session } } = await supabase.auth.getSession();
             let isPublic = false;
+            let album = null;
 
             try {
                 // Consulta unificada como en 404.html
@@ -204,7 +205,7 @@
 
                 if (tag.albums) {
                     isPublic = true;
-                    const album = tag.albums;
+                    album = tag.albums;
                     document.getElementById('albumTitle').innerText = album.title;
 
                     if (album.user_id === null) {

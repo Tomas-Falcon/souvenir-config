@@ -323,6 +323,7 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let mediaItems = [];
+        let album = null;
 
         async function init() {
             const uuid = window.location.pathname.split('/').pop();
@@ -348,7 +349,7 @@
 
                 if (tag.albums) {
                     isPublic = true;
-                    const album = tag.albums;
+                    album = tag.albums;
                     document.getElementById('albumTitle').innerText = album.title;
 
                     if (album.use_category_style && album.categories?.style_json) {
