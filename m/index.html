@@ -206,6 +206,14 @@
                 if (tag.albums) {
                     isPublic = true;
                     album = tag.albums;
+                    
+                    // Register the scan silently
+                    supabaseClient.from('albums')
+                        .update({ last_scanned_at: new Date().toISOString() })
+                        .eq('id', tag.album_id)
+                        .then(() => console.log("Scan logged"))
+                        .catch(e => console.error("Could not log scan:", e));
+
                     document.getElementById('albumTitle').innerText = album.title;
 
                     if (album.user_id === null) {
